@@ -1,0 +1,14 @@
+{
+  "version": "0.0.0.1",
+  "name": "Homebax Browser",
+  "updateTitle": "První testovací verze",
+  "description": "Přidáno nové UI a opraveno načítání stránek.",
+  "releaseDate": "2026-07-26",
+  "devlog-url": "https://homebax.vercel.app/devlog#browser",
+  "download-url": "url pro stažení update",
+  "changelog": [
+    "Nové uživatelské rozhraní",
+    "Opraveny chyby",
+    "Optimalizace výkonu"
+  ]
+}
