@@ -1,0 +1,24 @@
+# Tutorial for programmers who want to edit the project
+
+1. Download this project from github (Code -> Download Zip)
+2. Unzip anywhere on your computer
+3. Open Visual Studio 2022
+4. Open the folder you extracted from the .zip in it
+5. And you can now edit and play
+
+# Tutorial for packaging into .exe
+1. Do the same procedure as above.
+2. At the top, go to "View -> Terminal"
+3. Type in the terminal:
+```
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+```
+then
+```
+cmake -S . -B build
+```
+then
+```
+cmake --build build --config Debug
+```
+4. In "build\Debug\" you have HomebaxBrowser.exe
