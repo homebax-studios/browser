@@ -1,0 +1,86 @@
+```yaml
+name: Discord Notify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get Changed Files
+        id: files
+        shell: bash
+        run: |
+          FILES=$(git diff --name-only HEAD^ HEAD | sed 's#^.*/##' | paste -sd ", " -)
+          echo "changed_files=$FILES" >> "$GITHUB_OUTPUT"
+
+      - name: Send Discord Embed
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          BRANCH: ${{ github.ref_name }}
+          CHANGED_FILES: ${{ steps.files.outputs.changed_files }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+        run: |
+          curl \
+            -H "Content-Type: application/json" \
+            -X POST \
+            --data @- \
+            "$DISCORD_WEBHOOK" <<EOF
+          {
+            "embeds": [
+              {
+                "title": "🌐 Homebax Browser — Nový Update",
+                "description": "Byla vydána nová změna v projektu **Homebax Browser**.",
+                "color": 34047,
+                "fields": [
+                  {
+                    "name": "📜 Commit",
+                    "value": "**${COMMIT_MESSAGE}**",
+                    "inline": false
+                  },
+                  {
+                    "name": "👤 Upravil/a",
+                    "value": "[@${{ github.event.head_commit.author.username }}](https://github.com/${{ github.event.head_commit.author.username }})",
+                    "inline": true
+                  },
+                  {
+                    "name": "🌿 Branch",
+                    "value": "\`${BRANCH}\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🛠️ Upravené soubory",
+                    "value": "${CHANGED_FILES:-Žádné změny}",
+                    "inline": false
+                  },
+                  {
+                    "name": "🔗 Commit",
+                    "value": "[Zobrazit změnu](${COMMIT_URL})",
+                    "inline": true
+                  },
+                  {
+                    "name": "📖 DevLog",
+                    "value": "[Homebax Browser DevLog](https://homebax.vercel.app/devlog#browser)",
+                    "inline": true
+                  }
+                ],
+                "timestamp": "${TIMESTAMP}",
+                "footer": {
+                  "text": "Homebax Browser • Homebax Studios 2020–2026"
+                }
+              }
+            ]
+          }
+          EOF
+```
