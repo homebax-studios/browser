@@ -1,4 +1,4 @@
-![HB Browser](https://homebax.vercel.app/browser.png)
+![HB Browser](https://homebax.vercel.app/images/Browser.png)
 
 # Homebax Browser (HB Browser)
 
