@@ -31,9 +31,9 @@ For more information about WebView2 and its licensing, see the official Microsof
 
 The use of WebView2 does **not** mean that HB Browser itself is a Microsoft product.
 
-## Team
+## Team and Authors
 
-[Team Browser](Team.md)
+[AUTHORS Browser](AUTHORS.md)
 
 | Name               | Work                            | GitHub or URL                                            |
 | ------------------ | ------------------------------- | -------------------------------------------------------- |
