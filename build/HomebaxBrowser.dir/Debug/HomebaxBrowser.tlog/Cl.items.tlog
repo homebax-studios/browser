@@ -1,0 +1,10 @@
+C:\Users\origi\Desktop\Browser\src\main.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\main.obj
+C:\Users\origi\Desktop\Browser\src\ui\Window.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\Window.obj
+C:\Users\origi\Desktop\Browser\src\engine\Engine.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\Engine.obj
+C:\Users\origi\Desktop\Browser\src\networking\URL.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\URL.obj
+C:\Users\origi\Desktop\Browser\src\networking\HTTP.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\HTTP.obj
+C:\Users\origi\Desktop\Browser\src\html\DOM.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\DOM.obj
+C:\Users\origi\Desktop\Browser\src\html\HTMLParser.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\HTMLParser.obj
+C:\Users\origi\Desktop\Browser\src\css\CSSParser.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\CSSParser.obj
+C:\Users\origi\Desktop\Browser\src\css\StyleEngine.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\StyleEngine.obj
+C:\Users\origi\Desktop\Browser\src\rendering\Renderer.cpp;C:\Users\origi\Desktop\Browser\build\HomebaxBrowser.dir\Debug\Renderer.obj
