@@ -1,5 +1,20 @@
 ![HB Browser](https://homebax.vercel.app/images/Browser.png)
 
+<div align="center">
+
+<h2>🎮 Připoj se na náš Discord</h2>
+
+<p>
+Na našem Discord serveru najdeš příjemné lidi a obsah zaměřený na hry,
+vývoj a mnohem víc.
+</p>
+
+<a href="https://discord.gg/v4fNZr5BMr">
+  <img src="https://img.shields.io/badge/Discord-Připojit%20se-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Připojit se na Discord">
+</a>
+
+</div>
+
 # Homebax Browser (HB Browser)
 
 **HB Browser** is a modern web browser developed entirely by **Homebax Studios**.
