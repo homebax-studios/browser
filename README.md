@@ -8,11 +8,15 @@ The browser itself is developed from scratch by Homebax Studios. It uses **Micro
 
 ## Programming Languages
 
+* **CMakeLists**
+* **C**
 * **C++**
-* **C#**
-* **HTML**
-* **CSS**
-* **JavaScript**
+* **WebSite**
+  * **HTML**
+  * **CSS**
+  * **JavaScript**
+* **Web Render and Engine**
+  * **WebView2**
 
 ## Technology
 
