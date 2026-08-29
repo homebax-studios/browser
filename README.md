@@ -1,4 +1,3 @@
-jen jsem to doladil:
 ![HB Browser](https://homebax.vercel.app/browser.png)
 
 # Homebax Browser (HB Browser)
