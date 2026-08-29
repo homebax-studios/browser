@@ -1,4 +1,3 @@
-```yaml
 name: Discord Notify
 
 on:
@@ -27,6 +26,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          AUTHOR: ${{ github.actor }}
           BRANCH: ${{ github.ref_name }}
           CHANGED_FILES: ${{ steps.files.outputs.changed_files }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
@@ -51,7 +51,7 @@ jobs:
                   },
                   {
                     "name": "👤 Upravil/a",
-                    "value": "[@${{ github.event.head_commit.author.username }}](https://github.com/${{ github.event.head_commit.author.username }})",
+                    "value": "[@${AUTHOR}](https://github.com/${AUTHOR})",
                     "inline": true
                   },
                   {
@@ -82,5 +82,3 @@ jobs:
               }
             ]
           }
-          EOF
-```
