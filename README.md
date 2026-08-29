@@ -12,6 +12,12 @@
   <img src="https://img.shields.io/badge/YouTube-Odebírat-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
 </a>
 
+&nbsp;
+
+<a href="https://www.patreon.com/cw/homebax">
+  <img src="https://img.shields.io/badge/Patreon-Podpořit-E85B46?style=for-the-badge&logo=patreon&logoColor=white" alt="Podpořit Homebax Studios na Patreonu">
+</a>
+
 </div>
 
 
