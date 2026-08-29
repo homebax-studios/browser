@@ -2,18 +2,19 @@
 
 <div align="center">
 
-<h2>🎮 Připoj se na náš Discord</h2>
-
-<p>
-Na našem Discord serveru najdeš příjemné lidi a obsah zaměřený na hry,
-vývoj a mnohem víc.
-</p>
-
 <a href="https://discord.gg/v4fNZr5BMr">
   <img src="https://img.shields.io/badge/Discord-Připojit%20se-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Připojit se na Discord">
 </a>
 
+&nbsp;
+
+<a href="https://youtube.com/@homebax.studios">
+  <img src="https://img.shields.io/badge/YouTube-Odebírat-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube">
+</a>
+
 </div>
+
+
 
 # Homebax Browser (HB Browser)
 
