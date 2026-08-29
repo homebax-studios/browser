@@ -2,23 +2,43 @@
 
 # Homebax Browser (HB Browser)
 
-**HB Browser** is a modern web browser developed by **Homebax Studios**.
+**HB Browser** is a modern web browser developed entirely by **Homebax Studios**.
 
-The project is designed to provide a lightweight, customizable and modern browsing experience for Windows.
+The browser itself is developed from scratch by Homebax Studios. It uses **Microsoft WebView2** as its web rendering engine.
 
 ## Programming Languages
 
-* **C++** — Core browser functionality
-* **C#** — Application and UI layer
-* **HTML** — UI and web content
-* **CSS** — Styling
-* **JavaScript** — UI functionality and interactions
+* **C++**
+* **C#**
+* **HTML**
+* **CSS**
+* **JavaScript**
 
-## Technologies
+## Technology
 
-* **Microsoft WebView2** — Web rendering and browser functionality
-* **Chromium** — Rendering engine used by WebView2
-* **Windows** — Target operating system
+### Microsoft WebView2
+
+HB Browser uses **Microsoft WebView2** for web rendering and browser functionality.
+
+**WebView2 is not developed or owned by Homebax Studios.** It is a separate Microsoft technology and is subject to its own license and terms.
+
+For more information about WebView2 and its licensing, see the official Microsoft documentation:
+
+
+* Microsoft WebView2: https://developer.microsoft.com/microsoft-edge/webview2/
+* WebView2 licensing information: https://www.microsoft.com/en-us/legal/terms-of-use
+* Microsoft Edge WebView2 Runtime: https://developer.microsoft.com/microsoft-edge/webview2/
+
+The use of WebView2 does **not** mean that HB Browser itself is a Microsoft product.
+
+## Team
+
+[Team Browser](Team.md)
+
+| Name               | Work                            | GitHub or URL                                            |
+| ------------------ | ------------------------------- | -------------------------------------------------------- |
+| Homebax            | Full Browser (except WebView2)  | https://github.com/homebax-studios                       |
+| Microsoft WebView2 | Web rendering engine (WebView2) | https://developer.microsoft.com/microsoft-edge/webview2/ |
 
 ## License
 
@@ -26,38 +46,19 @@ HB Browser is licensed under the **MIT License**.
 
 Copyright © 2026 Homebax Studios
 
-You are free to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, subject to the terms of the MIT License.
+The MIT License applies to the original HB Browser source code created by Homebax Studios.
 
-See the [`LICENSE`](LICENSE) file for the complete license text.
+Third-party components, including **Microsoft WebView2**, are **not covered by the HB Browser MIT License** and remain subject to their respective licenses and terms.
 
-## Third-Party Components
+### Third-Party Software
 
-HB Browser uses third-party software and technologies that are distributed under their own licenses.
+| Component          | Purpose              | License / Terms                    |
+| ------------------ | -------------------- | ---------------------------------- |
+| Microsoft WebView2 | Web rendering engine | Microsoft WebView2 license / terms |
 
-### Microsoft WebView2
+## Credits
 
-HB Browser uses **Microsoft Edge WebView2** for web rendering and browser functionality.
+**HB Browser**
+Developed by **Homebax Studios**
 
-WebView2 is a Microsoft product and is **not part of the HB Browser MIT license**. Its use and distribution are subject to Microsoft's applicable license terms and documentation.
-
-* Microsoft WebView2: https://developer.microsoft.com/microsoft-edge/webview2/
-* WebView2 licensing information: https://www.microsoft.com/en-us/legal/terms-of-use
-* Microsoft Edge WebView2 Runtime: https://developer.microsoft.com/microsoft-edge/webview2/
-
-### Chromium
-
-WebView2 is based on the **Chromium** project. Chromium and its components are subject to their respective open-source licenses and notices.
-
-HB Browser does not relicense third-party components under the HB Browser MIT License.
-
-## Trademarks
-
-**Homebax**, **Homebax Studios**, and **HB Browser** are names and/or trademarks associated with Homebax Studios.
-
-Microsoft, Microsoft Edge, WebView2, and Chromium are trademarks or product names of their respective owners.
-
-This project is not affiliated with or endorsed by Microsoft.
-
-## Disclaimer
-
-HB Browser is an independent project developed by Homebax Studios. Third-party software and trademarks remain the property of their respective owners.
+The browser application and its original source code were created by Homebax Studios.
