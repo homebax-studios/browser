@@ -40,7 +40,7 @@ Now with **HB Core**
   - **CSS**
   - **JavaScript**
 - **Web Render and Engine**
-  - **HB Core**
+  - **WebView2**
 
 ## Technology
 
