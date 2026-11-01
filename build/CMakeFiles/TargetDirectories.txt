@@ -1,3 +1,0 @@
-C:/Users/origi/Desktop/Browser/build/CMakeFiles/HomebaxBrowser.dir
-C:/Users/origi/Desktop/Browser/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/origi/Desktop/Browser/build/CMakeFiles/ZERO_CHECK.dir
