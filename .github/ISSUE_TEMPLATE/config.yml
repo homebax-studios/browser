@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: HB Browser feature requests
+    url: https://github.com/homebax-studios/browser/issues
+    about: Please use the appropriate issue template to suggest new features or improvements.
+
+  - name: HB Browser documentation
+    url: https://github.com/homebax-studios/browser
+    about: Please check the project repository for documentation and information.
+
+  - name: Homebax Studios community
+    url: https://discord.gg/DsjeyeQVtf
+    about: Please ask questions, get help, or discuss HB Browser in our Discord community.
