@@ -1,0 +1,150 @@
+name: Bug report
+description: Report a bug or unexpected behavior in HB Browser
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug in HB Browser!
+
+        Please follow these guidelines to help us identify and fix the issue faster.
+
+        - Write a clear and descriptive issue title.
+        - **One issue = one bug.** Create a separate issue for each bug.
+        - Search [open issues](https://github.com/homebax-studios/web-homebax-studios/issues) and [closed issues](https://github.com/homebax-studios/web-homebax-studios/issues?q=is%3Aissue+is%3Aclosed) before creating a new report.
+        - Make sure you are using the latest available version of HB Browser.
+        - If you are using a development or custom build, mention it and provide the build information.
+        - Do not report issues caused by third-party software as HB Browser bugs unless they are related to our implementation or integration.
+
+  - type: input
+    id: version
+    attributes:
+      label: HB Browser version
+      description: |
+        Specify the exact HB Browser version in which you encountered the issue.
+
+        If you are using a development build, include the Git commit hash or build identifier if available.
+      placeholder: "e.g. 1.0.0 (Development Build)"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and system information
+      description: |
+        Provide information about your operating system and hardware.
+
+        Include:
+        - Operating system and version.
+        - CPU model.
+        - GPU model (if relevant).
+        - GPU driver version (if relevant).
+        - System architecture (x64, ARM64, etc.).
+      placeholder: "Windows 11 25H2 - x64 - Intel Core i5-13420H - Intel UHD Graphics"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      description: Which part of HB Browser is affected?
+      options:
+        - User Interface (UI)
+        - Browser Core (HB Core)
+        - Web Rendering (WebView2)
+        - Tabs and Windows
+        - Navigation and Address Bar
+        - Bookmarks and History
+        - Downloads
+        - Settings
+        - Database (SQLite)
+        - JSON / Configuration
+        - Logging (spdlog)
+        - Performance and Memory
+        - Installation and Updates
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue description
+      description: |
+        Describe the problem.
+
+        - What doesn't work?
+        - What did you expect to happen?
+        - What actually happened?
+        - Does the issue happen every time or only sometimes?
+
+        You can attach screenshots, videos, logs, or other relevant files.
+
+        Please provide error messages and code as text whenever possible instead of screenshots.
+      placeholder: Describe the bug and expected behavior...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Provide clear, numbered steps to reproduce the issue.
+
+        Include the URL, browser settings, or specific actions if relevant.
+      placeholder: |
+        1. Open HB Browser.
+        2. Navigate to ...
+        3. Click ...
+        4. Observe the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and error messages
+      description: |
+        Include relevant application logs, crash reports, console output, or error messages.
+
+        If no logs are available, write "N/A".
+      placeholder: Paste logs or error messages here...
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduction_files
+    attributes:
+      label: Additional files and reproduction materials
+      description: |
+        Attach any files that could help reproduce the issue.
+
+        Examples:
+        - Screenshots or screen recordings.
+        - Relevant configuration files.
+        - Sample HTML, CSS, or JavaScript files.
+        - Crash reports or diagnostic information.
+
+        **Do not upload passwords, session tokens, cookies, private browsing data, or other sensitive information.**
+
+        If no additional files are available, write "N/A".
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      description: Please confirm the following before submitting.
+      options:
+        - label: I have searched existing issues for duplicate reports.
+          required: true
+        - label: I have provided enough information to reproduce or investigate the issue.
+          required: true
+        - label: I have removed passwords, tokens, cookies, and other sensitive information from my report.
+          required: true
