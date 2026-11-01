@@ -1,6 +1,6 @@
 # 🚧 Coming Soon 🚧
 
-![HB Browser](https://homebax.vercel.app/images/Browser.png)
+![HB Browser](assets/readme/banner.png)
 
 <div align="center">
 
