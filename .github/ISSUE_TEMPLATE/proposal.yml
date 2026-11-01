@@ -1,0 +1,97 @@
+name: Feature proposal
+description: Suggest a new feature or improvement for HB Browser
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to HB Browser!
+
+        Before submitting:
+        - Search [open issues](https://github.com/homebax-studios/browser/issues) and [closed issues](https://github.com/homebax-studios/browser/issues?q=is%3Aissue+is%3Aclosed) for existing proposals.
+        - Submit one proposal per issue.
+        - Explain the problem your proposal would solve.
+        - Keep your proposal focused on HB Browser and its functionality.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Proposal summary
+      description: Describe your proposed feature or improvement briefly.
+      placeholder: What would you like to add or improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: |
+        What problem does this feature solve?
+
+        Explain why the current behavior or functionality is insufficient.
+      placeholder: Describe the problem you are experiencing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: |
+        Describe how you imagine this feature working.
+
+        Include possible UI changes, interactions, settings, or technical behavior if relevant.
+      placeholder: Describe your proposed solution...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered other solutions or workarounds?
+      placeholder: Describe alternative approaches, or write "N/A".
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      description: Which part of HB Browser would this proposal affect?
+      options:
+        - User Interface (UI)
+        - Browser Core (HB Core)
+        - Web Rendering (WebView2)
+        - Tabs and Windows
+        - Navigation and Address Bar
+        - Bookmarks and History
+        - Downloads
+        - Settings
+        - Database (SQLite)
+        - Performance and Optimization
+        - Security and Privacy
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups and additional information
+      description: |
+        Attach screenshots, designs, diagrams, or other materials that help explain your proposal.
+      placeholder: Add additional details or write "N/A".
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues for duplicate proposals.
+          required: true
+        - label: This proposal describes one feature or improvement.
+          required: true
