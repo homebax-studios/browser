@@ -1,6 +1,6 @@
 # Third-Party Software Licenses
 
-## All Third-Party Software in: https://github.com/homebax-studios/browser/thirdparty/README.md
+## All Third-Party Software in: [README.md in thirdparty](https://github.com/homebax-studios/browser/thirdparty/README.md)
 
 HB Browser uses third-party software components and libraries developed and maintained by their respective owners.
 
