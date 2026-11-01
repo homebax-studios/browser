@@ -2,23 +2,10 @@
 
 ![HB Browser](assets/readme/banner.png)
 
-<div align="center">
 
-<a href="https://discord.gg/v4fNZr5BMr">
-  <img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join our Discord">
-</a>
-
-
-<a href="https://youtube.com/@homebax.studios">
-  <img src="https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Subscribe on YouTube">
-</a>
-
-
-<a href="https://www.patreon.com/cw/homebax">
-  <img src="https://img.shields.io/badge/Patreon-Support%20us-E85B46?style=for-the-badge&logo=patreon&logoColor=white" alt="Support Homebax Studios on Patreon">
-</a>
-
-</div>
+[![Join our Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/v4fNZr5BMr)
+[![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/@homebax.studios)
+[![Support us on Patreon](https://img.shields.io/badge/Patreon-Support%20us-E85B46?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/cw/homebax)
 
 # Homebax Browser (HB Browser)
 
