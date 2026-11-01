@@ -1,6 +1,5 @@
 name: Bug report
 description: Report a bug or unexpected behavior in HB Browser
-title: ""
 labels: ["bug"]
 body:
   - type: markdown
