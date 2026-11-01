@@ -1,17 +1,26 @@
-# Homebax Browser Authors
+# Authors
 
-Everyone who participated in the development of HB Browser.
+## HB Browser
 
-I cannot list the individual developers of WebView2 because I do not know who worked on it. Therefore, they are credited collectively as **Microsoft WebView2**.
+**Copyright (c) 2026 Homebax Studios.**
 
-## Creator and Owner
+### Original Author & Developer
+- **Homebax Studios**
+- Project: HB Browser
+- Website: https://homebax.vercel.app
 
-`
-Ondřej Jurašík (Homebax)
-`
+### Contributors
 
-## Web Rendering Engine
+All contributors who make significant contributions to HB Browser may be listed here.
 
-`
-Microsoft WebView2
-`
+_No additional contributors currently listed._
+
+### Third-Party Software
+
+HB Browser uses third-party software and libraries developed by their respective authors.
+
+Their original authors and copyright holders retain ownership of their work. See `THIRD-PARTY-LICENSES.md` for details.
+
+---
+
+**Maintained by Homebax Studios.**
