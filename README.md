@@ -8,13 +8,11 @@
   <img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join our Discord">
 </a>
 
-&nbsp;
 
 <a href="https://youtube.com/@homebax.studios">
   <img src="https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Subscribe on YouTube">
 </a>
 
-&nbsp;
 
 <a href="https://www.patreon.com/cw/homebax">
   <img src="https://img.shields.io/badge/Patreon-Support%20us-E85B46?style=for-the-badge&logo=patreon&logoColor=white" alt="Support Homebax Studios on Patreon">
