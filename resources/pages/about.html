@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>O prohlížeči</title>
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
+<style>
+ .logo { width: 84px; height: 84px; border-radius: 25px; display: grid; place-items: center; font-size: 38px; font-weight: 750; color: var(--accent-fg);
+   background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #a855f7)); }
+ .hero { display: flex; gap: 22px; align-items: center; margin-bottom: 26px; } .hero h1 { margin: 0; font-size: 28px; }
+ table { width: 100%; border-collapse: collapse; } td { padding: 9px 18px; border-bottom: 1px solid var(--border); } tr:last-child td { border-bottom: 0; }
+ td:first-child { color: var(--muted); width: 42%; } kbd { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; font: 12px ui-monospace, Consolas, monospace; }
+ h2 { font-size: 17px; margin: 28px 0 10px; }
+</style></head>
+<body><div class="page">
+  <div class="hero"><div class="logo">HB</div><div><h1>HB Browser</h1><div class="muted" id="ver"></div><div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn primary" id="upd" data-i18n="checkUpdates"></button><button class="btn" id="site" data-i18n="website"></button></div><div id="updmsg" class="muted" style="margin-top:8px"></div></div></div>
+  <div class="card"><table id="facts"></table></div>
+  <h2 data-i18n="shortcuts"></h2>
+  <div class="card"><table id="keys"></table></div>
+  <h2 data-i18n="openSource"></h2>
+  <div class="card"><div class="row"><div class="grow muted">Microsoft Edge WebView2 · nlohmann/json · SQLite · spdlog · Windows Implementation Libraries (WIL)</div></div></div>
+</div>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const KEYS = [['m_newTab', 'Ctrl+T'], ['t_close', 'Ctrl+W'], ['t_reopen', 'Ctrl+Shift+T'], ['m_newWindow', 'Ctrl+N'], ['m_privateWindow', 'Ctrl+Shift+N'],
+    ['k_address', 'Ctrl+L / F6'], ['m_find', 'Ctrl+F'], ['bookmarkThis', 'Ctrl+D'], ['m_history', 'Ctrl+H'], ['m_downloads', 'Ctrl+J'],
+    ['k_switch', 'Ctrl+Tab / Ctrl+1…9'], ['k_zoom', 'Ctrl + / − / 0'], ['m_fullscreen', 'F11'], ['m_devtools', 'F12'], ['m_viewSource', 'Ctrl+U'], ['m_settings', 'Ctrl+,']];
+  let info = {};
+  const render = () => {
+    ver.textContent = t('version') + ' ' + info.version;
+    facts.innerHTML = [['version', info.version], ['webview', info.runtime || '—'], ['dataFolder', info.dataDir], ['openTabs', info.tabs]]
+      .map((r) => '<tr><td>' + esc(t('f_' + r[0])) + '</td><td>' + esc(r[1]) + '</td></tr>').join('');
+    keys.innerHTML = KEYS.map((k) => '<tr><td>' + esc(t(k[0])) + '</td><td><kbd>' + esc(k[1]) + '</kbd></td></tr>').join('');
+  };
+  ({ info } = await initPage()); render();
+  window.addEventListener('hb-settings', (e) => { info = e.detail.info; render(); });
+  document.getElementById('site').onclick = () => hb.call('nav', { url: 'https://homebax.vercel.app', newTab: true });
+  document.getElementById('upd').onclick = async () => {
+    updmsg.textContent = '…';
+    try {
+      const r = await hb.call('update.check');
+      if (!r) updmsg.textContent = t('updFail');
+      else if (r.available) { updmsg.innerHTML = esc(t('updAvailable', { v: r.latest })) + (r.url ? ' <a href="#" id="dl">' + esc(t('download')) + '</a>' : ''); if (r.url) document.getElementById('dl').onclick = (e) => { e.preventDefault(); hb.call('nav', { url: r.url, newTab: true }); }; }
+      else updmsg.textContent = t('updCurrent');
+    } catch (e) { updmsg.textContent = t('updFail'); }
+  };
+})();
+</script></body></html>

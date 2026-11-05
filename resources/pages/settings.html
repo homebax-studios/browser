@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>Nastavení</title>
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
+<style>
+ .layout { display: grid; grid-template-columns: 210px 1fr; gap: 26px; max-width: 1040px; margin: 0 auto; padding: 36px 28px 80px; }
+ nav { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 2px; }
+ nav a { display: flex; align-items: center; gap: 11px; padding: 10px 14px; border-radius: 10px; color: inherit; text-decoration: none; }
+ nav a:hover { background: var(--hover); } nav a.on { background: var(--accent); color: var(--accent-fg); }
+ h1 { font-size: 26px; margin: 0 0 20px; } h2 { margin: 0 0 14px; font-size: 20px; }
+ .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer; }
+ .sw.on { border-color: var(--text); } .swatches { display: flex; gap: 8px; align-items: center; }
+ input[type=color] { width: 34px; height: 30px; padding: 2px; border-radius: 8px; }
+ .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; padding: 14px 18px; }
+ .checks label { display: flex; gap: 9px; align-items: center; }
+ select { max-width: 260px; } input[type=text].wide { width: 260px; }
+ @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } nav { position: static; flex-direction: row; flex-wrap: wrap; } }
+</style></head>
+<body><div class="layout"><nav id="nav"></nav><main id="main"></main></div>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let S = {}, info = {};
+  const PRESETS = ['#4f7cff', '#7c5cff', '#e5484d', '#f08a24', '#2fa66a', '#0ea5a4', '#d946a8'];
+  const SECTIONS = [
+    { id: 'general', icon: 'home', items: [
+      { key: 'startup', type: 'select', opts: [['restore', 'opt_restore'], ['newtab', 'opt_newtab'], ['home', 'opt_home']] },
+      { key: 'homepage', type: 'text' },
+      { key: 'language', type: 'select', opts: [['auto', 'lang_auto'], ['cs', 'Čeština'], ['en', 'English']] },
+      { type: 'button', id: 'defaultBrowser', label: 's_defaultBrowser', hint: 'h_defaultBrowser', btn: 'setDefault' } ] },
+    { id: 'appearance', icon: 'sun', items: [
+      { key: 'theme', type: 'select', opts: [['system', 'theme_system'], ['light', 'theme_light'], ['dark', 'theme_dark']] },
+      { key: 'accent', type: 'accent' },
+      { key: 'showBookmarksBar', type: 'toggle' }, { key: 'showHomeButton', type: 'toggle' } ] },
+    { id: 'search', icon: 'search', items: [{ key: 'searchEngine', type: 'engines' }] },
+    { id: 'privacy', icon: 'shield', items: [
+      { key: 'trackingPrevention', type: 'select', opts: [['off', 'tp_off'], ['basic', 'tp_basic'], ['balanced', 'tp_balanced'], ['strict', 'tp_strict']] },
+      { key: 'passwordAutosave', type: 'toggle' }, { key: 'generalAutofill', type: 'toggle' }, { key: 'clearOnExit', type: 'toggle' }, { type: 'clearData' } ] },
+    { id: 'downloads', icon: 'download', items: [{ key: 'downloadDir', type: 'folder' }, { key: 'askDownloadLocation', type: 'toggle' }] },
+    { id: 'performance', icon: 'zzz', items: [
+      { key: 'memorySaver', type: 'toggle' },
+      { key: 'sleepAfterMinutes', type: 'select', num: true, opts: [[5, '5'], [10, '10'], [15, '15'], [30, '30'], [60, '60']], unit: 'minutes' },
+      { key: 'defaultZoom', type: 'select', num: true, opts: [75, 80, 90, 100, 110, 125, 150, 175, 200].map((z) => [z, z + ' %']) } ] },
+    { id: 'advanced', icon: 'code', items: [{ key: 'devTools', type: 'toggle' }, { key: 'singleInstance', type: 'toggle' }] },
+  ];
+  const row = (label, hint, control) => '<div class="row"><div class="grow"><div class="label">' + esc(label) + '</div>' + (hint ? '<div class="hint">' + esc(hint) + '</div>' : '') + '</div>' + control + '</div>';
+  const lab = (k) => t('s_' + k), hnt = (k) => { const h = t('h_' + k); return h === 'h_' + k ? '' : h; };
+  function control(it) {
+    const v = S[it.key];
+    switch (it.type) {
+      case 'toggle': return row(lab(it.key), hnt(it.key), '<label class="switch"><input type="checkbox" data-key="' + it.key + '"' + (v ? ' checked' : '') + '><span></span></label>');
+      case 'text': return row(lab(it.key), hnt(it.key), '<input class="wide" type="text" data-key="' + it.key + '" value="' + esc(v) + '">');
+      case 'select': return row(lab(it.key), hnt(it.key), '<select data-key="' + it.key + '"' + (it.num ? ' data-num' : '') + '>' +
+        it.opts.map((o) => '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(t(o[1])) + (it.unit ? ' ' + esc(t(it.unit)) : '') + '</option>').join('') + '</select>');
+      case 'engines': return row(lab(it.key), '', '<select data-key="searchEngine">' + info.engines.map((e) => '<option value="' + e.id + '"' + (e.id === v ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>');
+      case 'accent': return row(lab('accent'), '', '<div class="swatches">' + PRESETS.map((c) => '<button class="sw' + (c.toLowerCase() === String(v).toLowerCase() ? ' on' : '') + '" style="background:' + c + '" data-accent="' + c + '"></button>').join('') +
+        '<input type="color" id="accentPick" value="' + esc(v) + '"></div>');
+      case 'folder': return row(lab('downloadDir'), info.downloadDir, '<button class="btn" data-act="pick">' + esc(t('choose')) + '</button><button class="btn" data-act="resetDir">' + esc(t('reset')) + '</button>');
+      case 'button': return row(t(it.label), t(it.hint), '<button class="btn primary" data-act="' + it.btn + '">' + esc(t('apply')) + '</button>');
+      case 'clearData': return '<div class="row"><div class="grow"><div class="label">' + esc(t('clearData')) + '</div><div class="hint">' + esc(t('h_clearData')) + '</div></div></div>' +
+        '<div class="checks">' + ['history', 'cookies', 'siteData', 'cache', 'passwords', 'autofill', 'downloads'].map((k) => '<label><input type="checkbox" data-clear="' + k + '"' + (['history', 'cache'].includes(k) ? ' checked' : '') + '>' + esc(t('c_' + k)) + '</label>').join('') +
+        '</div><div class="row"><div class="grow muted" id="clearMsg"></div><button class="btn danger" data-act="clear">' + esc(t('clearNow')) + '</button></div>';
+    }
+    return '';
+  }
+  function render() {
+    const cur = (location.hash || '#general').slice(1), sec = SECTIONS.find((s) => s.id === cur) || SECTIONS[0];
+    document.getElementById('nav').innerHTML = SECTIONS.map((s) => '<a href="#' + s.id + '" class="' + (s.id === sec.id ? 'on' : '') + '">' + icon(s.icon, 18) + '<span>' + esc(t('sec_' + s.id)) + '</span></a>').join('') +
+      '<a href="#" data-page="about">' + icon('info', 18) + '<span>' + esc(t('m_about')) + '</span></a>';
+    document.getElementById('main').innerHTML = '<h1>' + esc(t('m_settings')) + '</h1><h2>' + esc(t('sec_' + sec.id)) + '</h2><div class="card">' + sec.items.map(control).join('') + '</div>';
+    document.title = t('m_settings');
+  }
+  const set = (key, value) => hb.call('settings.set', { key, value });
+  const reload = async (state) => { ({ settings: S, info } = state); render(); };
+  await reload(await initPage());
+  window.addEventListener('hashchange', render);
+  window.addEventListener('hb-settings', (e) => { if (!document.activeElement || !document.activeElement.matches('input[type=text],input[type=color]')) reload(e.detail); });
+  document.addEventListener('change', async (e) => {
+    const el = e.target, key = el.dataset && el.dataset.key;
+    if (el.id === 'accentPick') { await set('accent', el.value); return; }
+    if (!key) return;
+    const value = el.type === 'checkbox' ? el.checked : el.dataset.num !== undefined ? Number(el.value) : el.value;
+    S[key] = value; await set(key, value);
+  });
+  document.addEventListener('click', async (e) => {
+    const nav = e.target.closest('[data-page]'); if (nav) { e.preventDefault(); hb.call('openPage', { name: nav.dataset.page }); return; }
+    const sw = e.target.closest('[data-accent]'); if (sw) { await set('accent', sw.dataset.accent); return; }
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    if (a.dataset.act === 'pick') { await hb.call('settings.pickFolder'); info = await hb.call('app.info'); S = await hb.call('settings.get'); render(); }
+    else if (a.dataset.act === 'resetDir') { await set('downloadDir', ''); info = await hb.call('app.info'); render(); }
+    else if (a.dataset.act === 'setDefault') await hb.call('settings.setDefaultBrowser');
+    else if (a.dataset.act === 'clear') {
+      const kinds = [...document.querySelectorAll('[data-clear]:checked')].map((c) => c.dataset.clear);
+      if (!kinds.length) return;
+      document.getElementById('clearMsg').textContent = '…';
+      const ok = await hb.call('privacy.clear', { kinds });
+      document.getElementById('clearMsg').textContent = ok ? t('clearedOk') : t('clearedFail');
+    }
+  });
+})();
+</script></body></html>

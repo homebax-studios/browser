@@ -1,31 +1,24 @@
 #include "BrowserApp.h"
-#include "BrowserWindow.h"
 
-BrowserApp::BrowserApp(HINSTANCE instance)
-    : instance_(instance)
+namespace hb {
+
+bool BrowserApp::Initialize(int showCommand, StartupOptions options)
 {
-}
-
-BrowserApp::~BrowserApp() = default;
-
-bool BrowserApp::Initialize(int showCommand)
-{
-    window_ = std::make_unique<BrowserWindow>(instance_);
-    if (!window_->Create())
-        return false;
-
-    ShowWindow(window_->GetHandle(), showCommand);
-    UpdateWindow(window_->GetHandle());
-    return true;
+    window_ = std::make_unique<BrowserWindow>(instance_, std::move(options));
+    if (window_->Create(showCommand)) return true;
+    MessageBoxW(nullptr, L"HB Browser could not start. See data\\logs\\browser.log for details.", L"HB Browser", MB_ICONERROR);
+    return false;
 }
 
 int BrowserApp::Run()
 {
-    MSG message{};
-    while (GetMessageW(&message, nullptr, 0, 0) > 0)
+    MSG msg{};
+    while (GetMessageW(&msg, nullptr, 0, 0) > 0)
     {
-        TranslateMessage(&message);
-        DispatchMessageW(&message);
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
     }
-    return static_cast<int>(message.wParam);
+    return static_cast<int>(msg.wParam);
 }
+
+}  // namespace hb
