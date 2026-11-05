@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>Záložky</title>
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css"></head>
+<body><div class="page">
+  <div class="page-head"><h1 data-i18n="m_bookmarks"></h1>
+    <button class="btn" id="add" data-i18n="addBookmark"></button>
+    <button class="btn" id="imp" data-i18n="import"></button>
+    <button class="btn" id="exp" data-i18n="export"></button>
+    <input type="file" id="file" accept=".html,.htm,.json" hidden></div>
+  <div class="toolbar"><input type="search" id="q" data-i18n-ph="searchBookmarks"></div>
+  <div id="list"></div>
+</div>
+<dialog id="dlg"><h3 style="margin:0 0 6px" id="dt"></h3>
+  <label data-i18n="nt_name"></label><input id="bt" type="text">
+  <label data-i18n="nt_url"></label><input id="bu" type="text" placeholder="https://">
+  <label data-i18n="folder"></label><input id="bf" type="text">
+  <div class="actions"><button class="btn" id="dc" data-i18n="cancel"></button><button class="btn primary" id="ds" data-i18n="save"></button></div></dialog>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ' 55% 48%)'; };
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+  let items = [], editing = null;
+  const render = () => {
+    const f = q.value.trim().toLowerCase();
+    const shown = items.filter((b) => !f || (b.title + ' ' + b.url + ' ' + b.folder).toLowerCase().includes(f));
+    if (!shown.length) { list.innerHTML = '<div class="empty">' + esc(t(items.length ? 'noResults' : 'noBookmarks')) + '</div>'; return; }
+    const groups = {};
+    shown.forEach((b) => (groups[b.folder] = groups[b.folder] || []).push(b));
+    list.innerHTML = Object.keys(groups).sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b))).map((g) =>
+      '<div class="group-title">' + (g ? icon('folder', 14) + ' ' + esc(g) : esc(t('noFolder'))) + '</div><div class="card">' +
+      groups[g].map((b) => '<div class="list-item"><span class="badge" style="background:' + hue(host(b.url)) + '">' + esc((b.title || host(b.url)).trim().charAt(0).toUpperCase()) + '</span>' +
+        '<a href="#" data-url="' + esc(b.url) + '"><div class="title">' + esc(b.title || b.url) + '</div><div class="url">' + esc(b.url) + '</div></a>' +
+        '<button class="icon-btn" data-edit="' + b.id + '">' + icon('edit', 15) + '</button><button class="icon-btn" data-del="' + b.id + '">' + icon('trash', 15) + '</button></div>').join('') + '</div>').join('');
+  };
+  const load = async () => { items = await hb.call('bookmarks.list'); render(); };
+  function parseNetscape(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html'), out = [];
+    const walk = (dl, folder) => {
+      for (const dt of dl.children) {
+        if (dt.tagName !== 'DT') continue;
+        const h3 = dt.querySelector(':scope > h3'), a = dt.querySelector(':scope > a');
+        if (h3) { const sub = dt.querySelector(':scope > dl'); if (sub) walk(sub, h3.textContent.trim()); }
+        else if (a) out.push({ url: a.href, title: a.textContent.trim(), folder });
+      }
+    };
+    const root = doc.querySelector('dl'); if (root) walk(root, '');
+    if (!out.length) doc.querySelectorAll('a[href]').forEach((a) => out.push({ url: a.href, title: a.textContent.trim(), folder: '' }));
+    return out;
+  }
+  function openDialog(b) {
+    editing = b; dt.textContent = t(b ? 'editBookmark' : 'addBookmark');
+    bt.value = b ? b.title : ''; bu.value = b ? b.url : ''; bf.value = b ? b.folder : '';
+    dlg.showModal(); (b ? bt : bu).focus();
+  }
+  await initPage(); await load();
+  window.addEventListener('hb-settings', render);
+  q.oninput = render;
+  document.getElementById('add').onclick = () => openDialog(null);
+  dc.onclick = () => dlg.close();
+  ds.onclick = async () => {
+    let u = bu.value.trim(); if (!u) return;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    if (editing) await hb.call('bookmarks.update', { id: editing.id, title: bt.value.trim(), url: u, folder: bf.value.trim() });
+    else await hb.call('bookmarks.add', { title: bt.value.trim(), url: u, folder: bf.value.trim() });
+    dlg.close(); load();
+  };
+  list.addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-del]'), ed = e.target.closest('[data-edit]'), a = e.target.closest('a[data-url]');
+    if (del) { await hb.call('bookmarks.remove', { id: +del.dataset.del }); load(); }
+    else if (ed) openDialog(items.find((b) => b.id === +ed.dataset.edit));
+    else if (a) { e.preventDefault(); hb.call('nav', { url: a.dataset.url }); }
+  });
+  document.getElementById('imp').onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    const text = await f.text(); let list2 = [];
+    try { list2 = f.name.toLowerCase().endsWith('.json') ? JSON.parse(text) : parseNetscape(text); } catch (e) { /* ignore */ }
+    const added = await hb.call('bookmarks.import', { items: Array.isArray(list2) ? list2 : [] });
+    file.value = ''; alert(t('importDone', { n: added })); load();
+  };
+  document.getElementById('exp').onclick = () => {
+    const by = {}; items.forEach((b) => (by[b.folder] = by[b.folder] || []).push(b));
+    const li = (b) => '    <DT><A HREF="' + esc(b.url) + '">' + esc(b.title || b.url) + '</A>\n';
+    let html = '<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n';
+    (by[''] || []).forEach((b) => { html += li(b); });
+    Object.keys(by).filter((k) => k).forEach((k) => { html += '    <DT><H3>' + esc(k) + '</H3>\n    <DL><p>\n' + by[k].map((b) => '    ' + li(b)).join('') + '    </DL><p>\n'; });
+    html += '</DL><p>\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'hb-bookmarks.html'; a.click();
+  };
+})();
+</script></body></html>

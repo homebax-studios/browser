@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>Stažené soubory</title>
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
+<style>.bar{height:5px;border-radius:3px;background:var(--border);margin:7px 0 3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}</style></head>
+<body><div class="page">
+  <div class="page-head"><h1 data-i18n="m_downloads"></h1><button class="btn" id="clear" data-i18n="clearList"></button></div>
+  <div id="list"></div>
+</div>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const human = (b) => { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let v = Math.max(0, b || 0), i = 0; while (v >= 1024 && i < 4) { v /= 1024; i++; } return (i ? v.toFixed(1) : v.toFixed(0)) + ' ' + u[i]; };
+  let items = [], busy = false;
+  const render = () => {
+    if (!items.length) { list.innerHTML = '<div class="empty">' + esc(t('noDownloads')) + '</div>'; return; }
+    list.innerHTML = '<div class="card">' + items.map((d) => {
+      const active = d.state === 'progress' || d.state === 'paused', pct = d.total > 0 ? Math.min(100, Math.round(d.received * 100 / d.total)) : 0;
+      const sub = active ? (d.state === 'paused' ? t('dlPaused') + ' · ' : '') + (d.total > 0 ? pct + ' % · ' + human(d.received) + ' / ' + human(d.total) : human(d.received))
+        : t('dl_' + d.state) + (d.state === 'done' ? ' · ' + human(d.total) : '');
+      const btn = (a, ic, title) => '<button class="icon-btn" data-a="' + a + '" data-id="' + d.id + '" title="' + esc(t(title)) + '">' + icon(ic, 16) + '</button>';
+      const actions = active ? (d.state === 'paused' ? btn('resume', 'play', 'resume') : btn('pause', 'pause', 'pause')) + btn('cancel', 'close', 'cancel')
+        : (d.state === 'done' ? btn('open', 'external', 'openFile') + btn('show', 'folder', 'showInFolder') : '') + btn('remove', 'trash', 'delete');
+      return '<div class="list-item"><span style="color:var(--muted)">' + icon('file', 24) + '</span><div style="flex:1;min-width:0"><div class="title">' + esc(d.name || d.url) + '</div>' +
+        (active ? '<div class="bar"><i style="width:' + pct + '%"></i></div>' : '') + '<div class="url">' + esc(sub) + '</div><div class="url" style="opacity:.7">' + esc(d.path) + '</div></div>' + actions + '</div>';
+    }).join('') + '</div>';
+  };
+  const load = async () => { if (busy || document.hidden) return; busy = true; try { items = await hb.call('downloads.list'); render(); } finally { busy = false; } };
+  await initPage(); await load();
+  setInterval(load, 800);
+  window.addEventListener('hb-settings', render);
+  document.getElementById('clear').onclick = async () => { await hb.call('downloads.clear'); load(); };
+  list.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    await hb.call('downloads.' + b.dataset.a, { id: +b.dataset.id }); load();
+  });
+})();
+</script></body></html>

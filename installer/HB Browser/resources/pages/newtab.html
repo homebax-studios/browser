@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>Nová karta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
+<style>
+ body { background: var(--toolbar); }
+ .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 14vh 24px 40px; }
+ .logo { width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center; font-size: 34px; font-weight: 750; color: var(--accent-fg);
+   background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #a855f7)); box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent); }
+ h1 { margin: 18px 0 26px; font-size: 22px; font-weight: 600; letter-spacing: .2px; }
+ .search { width: min(640px, 100%); display: flex; align-items: center; gap: 10px; padding: 0 20px; height: 54px; background: var(--surface); border: 1px solid var(--border); border-radius: 27px; box-shadow: 0 6px 24px rgba(20,24,40,.07); }
+ .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+ .search input { flex: 1; border: 0; background: transparent; box-shadow: none; font-size: 16px; height: 100%; padding: 0; }
+ .search input:focus { box-shadow: none; }
+ .tiles { display: grid; grid-template-columns: repeat(auto-fill, 112px); justify-content: center; gap: 14px; width: min(760px, 100%); margin-top: 38px; }
+ .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 14px 6px 10px; border-radius: 16px; color: inherit; text-decoration: none; }
+ .tile:hover { background: var(--hover); }
+ .tile .b { width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; color: #fff; font-size: 20px; font-weight: 700; }
+ .tile .n { max-width: 100%; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .tile .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border: 0; border-radius: 11px; background: var(--surface-2); color: var(--muted); display: none; place-items: center; padding: 0; }
+ .tile:hover .x { display: grid; }
+ .tile.add .b { background: var(--surface-2); color: var(--muted); }
+ .section { width: min(760px, 100%); margin-top: 30px; }
+ .section h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 4px 8px; }
+</style></head>
+<body>
+<div class="hero">
+  <div class="logo">HB</div>
+  <h1 data-i18n="nt_title"></h1>
+  <form class="search" id="form"><span data-icon="search" data-size="20" style="color:var(--muted)"></span>
+    <input id="q" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="omniPlaceholder"></form>
+  <div class="section"><h2 data-i18n="nt_pinned"></h2><div class="tiles" id="pinned"></div></div>
+  <div class="section" id="topWrap" hidden><h2 data-i18n="nt_top"></h2><div class="tiles" id="top"></div></div>
+</div>
+<dialog id="dlg"><h3 style="margin:0 0 6px" data-i18n="nt_addTitle"></h3>
+  <label data-i18n="nt_name"></label><input id="dn" type="text">
+  <label data-i18n="nt_url"></label><input id="du" type="text" placeholder="https://">
+  <div class="actions"><button class="btn" id="dc" data-i18n="cancel"></button><button class="btn primary" id="ds" data-i18n="save"></button></div></dialog>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ' 55% 48%)'; };
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+  let pinned = [];
+  const tile = (it, removable) => '<a class="tile" href="#" data-url="' + esc(it.url) + '"><span class="b" style="background:' + hue(host(it.url)) + '">' +
+    esc((it.title || host(it.url)).trim().charAt(0).toUpperCase()) + '</span><span class="n">' + esc(it.title || host(it.url)) + '</span>' +
+    (removable ? '<button class="x" data-rm="' + esc(it.url) + '">' + icon('close', 12) + '</button>' : '') + '</a>';
+  async function render() {
+    document.getElementById('pinned').innerHTML = pinned.map((p) => tile(p, true)).join('') +
+      '<a class="tile add" href="#" data-add><span class="b">' + icon('plus', 22) + '</span><span class="n">' + t('nt_add') + '</span></a>';
+    const top = (await hb.call('topsites', { limit: 8 })).filter((x) => !pinned.some((p) => p.url === x.url)).slice(0, 6);
+    document.getElementById('topWrap').hidden = !top.length;
+    document.getElementById('top').innerHTML = top.map((x) => tile(x, false)).join('');
+  }
+  const { settings } = await initPage();
+  pinned = settings.pinned || [];
+  await render();
+  window.addEventListener('hb-settings', async (e) => { pinned = e.detail.settings.pinned || []; await render(); });
+  document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); const v = q.value.trim(); if (v) hb.call('nav', { url: v }); });
+  document.addEventListener('click', async (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (rm) { e.preventDefault(); e.stopPropagation(); pinned = pinned.filter((p) => p.url !== rm.dataset.rm); await hb.call('settings.set', { key: 'pinned', value: pinned }); render(); return; }
+    if (e.target.closest('[data-add]')) { e.preventDefault(); dn.value = ''; du.value = ''; dlg.showModal(); du.focus(); return; }
+    const a = e.target.closest('.tile[data-url]'); if (a) { e.preventDefault(); hb.call('nav', { url: a.dataset.url }); }
+  });
+  dc.onclick = () => dlg.close();
+  ds.onclick = async () => {
+    let u = du.value.trim(); if (!u) return;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    pinned = pinned.concat([{ title: dn.value.trim() || host(u), url: u }]);
+    await hb.call('settings.set', { key: 'pinned', value: pinned }); dlg.close(); render();
+  };
+})();
+</script></body></html>

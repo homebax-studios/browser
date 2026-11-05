@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><title>Historie</title>
+<link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css"></head>
+<body><div class="page">
+  <div class="page-head"><h1 data-i18n="m_history"></h1>
+    <select id="range"><option value="hour" data-i18n="range_hour"></option><option value="day" data-i18n="range_day"></option><option value="week" data-i18n="range_week"></option><option value="all" data-i18n="range_all"></option></select>
+    <button class="btn danger" id="clear" data-i18n="clearHistory"></button></div>
+  <div class="toolbar"><input type="search" id="q" data-i18n-ph="searchHistory"></div>
+  <div id="list"></div>
+  <div style="text-align:center;margin-top:16px"><button class="btn" id="more" hidden data-i18n="loadMore"></button></div>
+</div>
+<script src="../shared/icons.js"></script><script src="../shared/bridge.js"></script><script src="../shared/i18n.js"></script>
+<script>
+(async () => {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ' 55% 48%)'; };
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+  const PAGE = 200; let items = [], more = false, timer = 0;
+  const day = (ms) => { const d = new Date(ms), n = new Date(), y = new Date(Date.now() - 864e5);
+    if (d.toDateString() === n.toDateString()) return t('today'); if (d.toDateString() === y.toDateString()) return t('yesterday');
+    return d.toLocaleDateString(document.documentElement.lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+  const render = () => {
+    if (!items.length) { list.innerHTML = '<div class="empty">' + esc(t('noHistory')) + '</div>'; more.hidden = true; return; }
+    let html = '', last = '';
+    for (const it of items) {
+      const d = day(it.time);
+      if (d !== last) { html += (last ? '</div>' : '') + '<div class="group-title">' + esc(d) + '</div><div class="card">'; last = d; }
+      html += '<div class="list-item"><span class="badge" style="background:' + hue(host(it.url)) + '">' + esc((it.title || host(it.url)).trim().charAt(0).toUpperCase()) + '</span>' +
+        '<a href="#" data-url="' + esc(it.url) + '"><div class="title">' + esc(it.title || it.url) + '</div><div class="url">' + esc(it.url) + '</div></a>' +
+        '<span class="muted" style="font-size:12px">' + new Date(it.time).toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit' }) + '</span>' +
+        '<button class="icon-btn" data-rm="' + it.id + '" data-i18n-title="delete" title="' + esc(t('delete')) + '">' + icon('close', 15) + '</button></div>';
+    }
+    list.innerHTML = html + '</div>';
+  };
+  async function load(append) {
+    const r = await hb.call('history.list', { q: q.value.trim(), limit: PAGE, offset: append ? items.length : 0 });
+    items = append ? items.concat(r) : r; document.getElementById('more').hidden = r.length < PAGE; render();
+  }
+  await initPage(); await load(false);
+  window.addEventListener('hb-settings', render);
+  q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => load(false), 150); };
+  document.getElementById('more').onclick = () => load(true);
+  document.getElementById('clear').onclick = async () => { if (confirm(t('confirmClearHistory'))) { await hb.call('history.clear', { range: range.value }); load(false); } };
+  list.addEventListener('click', async (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (rm) { await hb.call('history.remove', { id: +rm.dataset.rm }); items = items.filter((x) => x.id !== +rm.dataset.rm); render(); return; }
+    const a = e.target.closest('a[data-url]'); if (a) { e.preventDefault(); hb.call('nav', { url: a.dataset.url }); }
+  });
+  list.addEventListener('auxclick', (e) => { const a = e.target.closest('a[data-url]'); if (a && e.button === 1) { e.preventDefault(); hb.call('nav', { url: a.dataset.url, newTab: true }); } });
+})();
+</script></body></html>
