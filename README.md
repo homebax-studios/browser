@@ -130,7 +130,7 @@ Want to contribute or build HB Browser yourself?
 
 ```bash
 git clone
-
+```
 
 ## Star History
 
