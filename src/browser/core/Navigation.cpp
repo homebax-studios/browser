@@ -16,6 +16,8 @@ const std::vector<SearchEngine>& SearchEngines()
         {"brave", "Brave Search", "https://search.brave.com/search?q=%s"},
         {"startpage", "Startpage", "https://www.startpage.com/do/search?q=%s"},
         {"ecosia", "Ecosia", "https://www.ecosia.org/search?q=%s"},
+        {"hb-search", "HB Search", "https://homebax.vercel.app/search?=%s"},
+
     };
     return engines;
 }
@@ -100,7 +102,7 @@ bool LooksLikeHost(const std::string& text)
         if (!IsHostChar(c) && c != '.') return false;
     if (host.front() == '.' || host.back() == '.') return false;
     const auto dot = host.rfind('.');
-    if (dot == std::string::npos) return hasPort;  // "myserver:8080"
+    if (dot == std::string::npos) return hasPort; 
     const std::string tld = host.substr(dot + 1);
     if (tld.size() < 2) return false;
     return !std::all_of(tld.begin(), tld.end(), [](unsigned char c) { return std::isdigit(c); });

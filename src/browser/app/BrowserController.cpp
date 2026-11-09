@@ -17,7 +17,7 @@
 #include "../../../platform/windows/WinUtil.h"
 
 #ifndef HB_VERSION
-#define HB_VERSION "2.1.2"
+#define HB_VERSION "2.2.2"
 #endif
 
 using Microsoft::WRL::Callback;
@@ -29,7 +29,7 @@ namespace {
 constexpr UINT_PTR kTimerHousekeeping = 1;
 constexpr UINT_PTR kTimerPush = 2;
 constexpr UINT_PTR kTimerDefer = 3;
-const char* kUpdateUrl = "https://homebax.vercel.app/browser/info.json";  // {"version":"x.y.z","url":"https://..."}
+const char* kUpdateUrl = "https://homebax.vercel.app/browser/info.json"; 
 
 const COLORREF kFrameDark = RGB(28, 29, 33);
 const COLORREF kFrameLight = RGB(222, 226, 234);

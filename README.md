@@ -1,73 +1,141 @@
 # HB Browser
 
-Přenosný (portable) prohlížeč pro Windows od Homebax Studios. C++20, Microsoft WebView2, bez instalátoru a bez AI.
-Moderní vzhled inspirovaný Atlasem: karty v záhlaví okna, zaoblený adresní řádek, světlý/tmavý motiv, vlastní barva zvýraznění.
+<p align="center">
+  <img src="assets/readme/banner.png" alt="HB Browser Banner" width="100%">
+</p>
 
-## Co umí
+<h1 align="center">HB Browser</h1>
 
-| Oblast | Funkce |
+<p align="center">
+  <strong>A modern browsing experience, built from scratch.</strong>
+  <br>
+  Designed for simplicity, performance, customization and the future of the web.
+</p>
+
+<p align="center">
+  <a href="https://github.com/homebax-studios/browser/releases">
+    <img src="https://img.shields.io/github/v/release/homebax-studios/browser?include_prereleases&style=for-the-badge&color=7c6fff&label=LATEST%20RELEASE" alt="Latest Release">
+  </a>
+  <a href="https://github.com/homebax-studios/browser">
+    <img src="https://img.shields.io/github/stars/homebax-studios/browser?style=for-the-badge&color=7c6fff" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/homebax-studios/browser/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/LICENSE-GPL--3.0-7c6fff?style=for-the-badge" alt="License">
+  </a>
+  <img src="https://img.shields.io/badge/PLATFORM-Windows-0078D6?style=for-the-badge&logo=windows" alt="Platform">
+</p>
+
+<p align="center">
+  <a href="https://github.com/homebax-studios/browser/releases">Download</a> •
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#technology-stack">Technology</a> •
+  <a href="#community">Community</a>
+</p>
+
+---
+
+## About
+
+**HB Browser** is an independent web browser developed by **Homebax Studios**.
+
+Built from scratch with a focus on modern design, usability and extensibility, HB Browser aims to deliver a fresh alternative to traditional web browsers.
+
+The project combines native C++ technologies with modern web technologies to create a flexible desktop browsing experience.
+
+Our goal is simple: build a browser that we actually want to use.
+
+## Features
+
+### Browsing
+
+- Multi-tab browsing.
+- Modern web page rendering.
+- Support for modern websites.
+- Improved compatibility with 3D web content and games.
+- Integrated browser navigation.
+
+### Built-in Pages
+
+HB Browser includes its own internal browser pages.
+
+Examples:
+
+| Page | Description |
 |---|---|
-| Karty | nová / zavřít / znovu otevřít, přetahování pořadí, připnuté karty, ztlumení, duplikace, zavřít ostatní / vpravo, ikony webů, indikátor načítání a zvuku, vyskakovací okna s funkčním `window.opener` (přihlašování přes OAuth) |
-| Adresní řádek | URL i vyhledávání (Google, Bing, DuckDuckGo, Seznam, Brave, Startpage, Ecosia), návrhy ze záložek a historie, ikona zabezpečení, `hb://` stránky, Alt+Enter = nová karta |
-| Záložky | hvězdička, panel záložek se složkami, správce záložek, import/export (HTML Netscape i JSON) |
-| Historie, stahování | historie v SQLite s vyhledáváním, stažené soubory s průběhem, pauzou, zrušením, otevřením a „zobrazit ve složce“ |
-| Stránka | hledání na stránce (s počtem), přiblížení pro každý web zvlášť, tisk, zdroj stránky, DevTools, celá obrazovka (F11 i video) |
-| Soukromí | anonymní karty / okna, ochrana proti sledování (4 úrovně), mazání cookies, dat webů, cache, hesel, historie |
-| Paměť | **Šetřič paměti**: nepoužívané karty se po čase uspí, později úplně uvolní z paměti a načtou se až při návratu; obnovené karty z minulé relace se vytvoří teprve při otevření |
-| Systém | jedna instance (další spuštění předá odkaz běžícímu oknu), obnovení relace a pozice okna, čeština i angličtina, registrace jako výchozí prohlížeč bez admina |
-| Ikony | všechny ikony jsou vestavěné SVG – funguje i offline, žádné CDN ani webfonty |
+| `hb://about` | Browser information |
+| `hb://settings` | Browser settings |
 
-Klávesové zkratky jsou vypsané na stránce `hb://about` (Ctrl+T, W, Shift+T, L, F, D, H, J, +/−/0, Ctrl+Tab, F11, F12 …).
+Internal pages are designed specifically for HB Browser.
 
-## Sestavení
+### User Experience
 
-1. Visual Studio 2022 (nebo Build Tools) s C++ a CMake 3.25+.
-2. Knihovny do `thirdparty/` podle `thirdparty/README.md`.
-3. ```
-   cmake -S . -B build -A x64
-   cmake --build build --config Release
-   ```
-   Výsledek: `build/bin/Release/HB Browser.exe` + složka `resources/` hned vedle (kopíruje se automaticky).
-4. Přenosný ZIP: `cpack -C Release --config build/CPackConfig.cmake` → `HB-Browser-<verze>-win-x64-portable.zip`.
+- Modern and clean interface.
+- Dedicated settings interface.
+- Native desktop application.
+- Custom browser components.
+- Continuously evolving functionality.
 
-**Běh bez instalace:** Windows 11 i většina Windows 10 už mají WebView2 Runtime. Pokud ne, vložte složku *Fixed Version* runtime
-do `WebView2Runtime\` vedle exe – prohlížeč ji použije sám. Data (profil, záložky, historie, nastavení, log) jsou ve složce
-`data\` vedle exe; když tam nejde zapisovat, použije se `%LOCALAPPDATA%\HB Browser`.
+## Technology Stack
 
-Přepínače: `--private` (anonymní okno), `--new-instance` (ignorovat „jedno okno“), adresy a soubory jako argumenty.
+HB Browser uses a combination of native and web technologies.
 
-## Struktura
+| Technology | Purpose |
+|---|---|
+| C++ | Core application |
+| CMake | Build system |
+| Microsoft WebView2 | Web rendering |
+| HTML | Interface structure |
+| CSS | Interface styling |
+| JavaScript | Interface functionality |
+| SQLite | Data storage |
+| nlohmann/json | JSON handling |
+| spdlog | Logging |
+| Microsoft WIL | Windows development utilities |
 
-```
-src/browser/
-  core/            přenosné jádro bez Win32 (adresy, nastavení, SQLite, model karet) – otestované na Linuxu
-  webview/         WebViewManager – jediné místo, které mluví s WebView2
-  app/             BrowserController – příkazy, stav, stahování, RPC pro hb:// stránky
-  BrowserWindow    okno bez systémového rámu, DPI, celá obrazovka, popupy nad stránkou
-platform/windows/  WinUtil (cesty, registr, dialogy, HTTP)
-resources/ui/      lišta prohlížeče (HTML/CSS/JS)    resources/pages/  hb:// stránky
-resources/shared/  ikony, most k nativní části, překlady, CSS    resources/translations/  cs.json, en.json
-tests/             testy jádra: cmake -S tests -B build-tests
-```
+### Rendering Engine
 
-### Jak to spolu mluví
-* Lišta (`resources/ui`) je jeden WebView přes celé okno, oříznutý (`SetWindowRgn`) na pruh nástrojů + právě otevřené popupy,
-  takže nabídky a návrhy se kreslí **nad** stránkou. Každá karta je vlastní WebView.
-* UI → nativní kód: `{cmd:"newTab", ...}`; nativní kód → UI: jeden JSON `state` (karty, navigace, záložky, motiv).
-* Stránky `hb://x` jsou soubory `resources/pages/x.html` na virtuálním hostu `hb.local`; volají `hb.call("settings.set", {...})`.
-  Nativní strana přijme zprávu jen z `https://hb.local/pages/…`, takže weby ovládat prohlížeč nemohou.
-* Nový příkaz: přidat větev do `BrowserController::Exec` (z UI/zkratek) nebo `Rpc` (ze stránek).
+HB Browser currently uses **Microsoft WebView2** for web content rendering.
 
-### Android později
-`src/browser/core` nepoužívá nic z Windows (UTF-8, `std::filesystem`, SQLite). Pro Android stačí napsat nový „shell“
-(WebView/GeckoView + JNI) nad stejnými třídami `Settings`, `Storage`, `TabManager`, `ResolveInput`; HTML lištu lze přepoužít.
+This provides compatibility with modern web technologies while allowing the browser application to be developed using native Windows technologies.
 
-## Stav ověření (upřímně)
-* Jádro (`core/`) přeloženo a prošlo testy na Linuxu (`tests/`).
-* Win32 část (`BrowserWindow`, `WinUtil`, `main`) prošla kontrolou překladačem mingw-w64.
-* Každé volání WebView2 jsem zkontroloval proti rozhraním v SDK (existence metod i správné rozhraní).
-* Lišta a všechny `hb://` stránky běží v simulovaném prostředí s falešným nativním mostem.
-* **`WebViewManager.cpp` a `BrowserController.cpp` jsem v tomto prostředí nemohl přeložit** (chybí WebView2.h) a program jsem ani nespustil.
-  Při prvním sestavení tedy čekejte drobné chyby překladu; hlavní riziko ke kontrole za běhu je ořez lišty přes `SetWindowRgn`
-  (popupy nad stránkou) a okraj 5 px pro změnu velikosti okna.
-* Adresa kontroly aktualizací je v `BrowserController.cpp` (`kUpdateUrl`), očekává `{"version":"x.y.z","url":"…"}`.
+## Installation
+
+### Windows
+
+1. Open the [Releases](https://github.com/homebax-studios/browser/releases) page.
+2. Download the latest available installer.
+3. Run the installer.
+4. Follow the installation instructions.
+5. Launch HB Browser.
+
+**Note:** Microsoft Edge WebView2 Runtime is required for web rendering.
+
+## Development
+
+Want to contribute or build HB Browser yourself?
+
+### Requirements
+
+- Windows 10 or Windows 11.
+- Visual Studio 2022.
+- C++ Desktop Development workload.
+- CMake.
+- Git.
+- Microsoft WebView2 SDK.
+
+### Clone the repository
+
+```bash
+git clone
+
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=homebax-studios%2Fbrowser&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=homebax-studios/browser&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=homebax-studios/browser&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=homebax-studios/browser&type=date&legend=top-left" />
+ </picture>
+</a>

@@ -12,7 +12,7 @@ namespace hb {
 
 namespace {
 
-constexpr wchar_t kUiUrl[] = L"https://hb.local/ui/chrome.html";
+constexpr wchar_t kUiUrl[] = L"https://homebax.vercel.app/search";
 
 std::wstring FindFixedRuntime()
 {
