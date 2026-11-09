@@ -47,6 +47,8 @@ Our goal is simple: build a browser that we actually want to use.
 
 ## Features
 
+- 100% anonymity with no data theft (we do not track websites on our end)
+
 ### Browsing
 
 - Multi-tab browsing.
@@ -139,3 +141,4 @@ git clone
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=homebax-studios/browser&type=date&legend=top-left" />
  </picture>
 </a>
+
