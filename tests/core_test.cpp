@@ -1,5 +1,6 @@
 #include "core/Navigation.h"
 #include "core/Settings.h"
+#include "core/Security.h"
 #include "core/Storage.h"
 #include "core/TabManager.h"
 #include "core/Util.h"
@@ -28,6 +29,20 @@ int main() {
   EQ(SchemeOf("HTTPS://x"), "https");
   CHECK(CompareVersions("2.1.10","2.1.2") > 0); CHECK(CompareVersions("2.1.2","2.1.2")==0); CHECK(CompareVersions("2.0","2.0.1") < 0); CHECK(CompareVersions("v3","2.9.9")>0);
 
+  // security / validation
+  EQ(ResolveInput("edge://settings", "google"), "https://www.google.com/search?q=edge%3A%2F%2Fsettings");
+  CHECK(IsSafeTabUrl("https://a.cz")); CHECK(!IsSafeTabUrl("javascript:alert(1)")); CHECK(!IsSafeTabUrl("data:text/html,x")); CHECK(IsSafeTabUrl("about:blank")); CHECK(!IsSafeTabUrl("about:config"));
+  CHECK(IsValidSearchTemplate("https://x.cz/?q=%s")); CHECK(!IsValidSearchTemplate("https://x.cz/")); CHECK(!IsValidSearchTemplate("https://x.cz/%s%s")); CHECK(!IsValidSearchTemplate("javascript:%s")); CHECK(!IsValidSearchTemplate("https://x.cz/ ?%s"));
+  SetCustomSearchEngines({{"custom-a", "A", "https://a.cz/?q=%s"}, {"google", "Evil", "https://evil/%s"}, {"custom-b", "B", "https://b.cz/"}});
+  CHECK(SearchEngines().size() == 9); EQ(ResolveInput("pes", "custom-a"), "https://a.cz/?q=pes"); EQ(ResolveInput("pes", "gone"), "https://www.google.com/search?q=pes");
+  SetCustomSearchEngines({});
+  CHECK(IsDangerousFileName("Setup.EXE")); CHECK(IsDangerousFileName("a.exe. ")); CHECK(IsDangerousFileName("x.ps1")); CHECK(!IsDangerousFileName("photo.png")); CHECK(!IsDangerousFileName("noext"));
+  EQ(SanitizeFileName("..\\a/b:c.txt"), ".._a_b_c.txt"); EQ(SanitizeFileName("CON.txt"), "_CON.txt"); EQ(SanitizeFileName("  "), "download");
+  CHECK(!Settings::IsValid("theme", "neon")); CHECK(!Settings::IsValid("accent", "red;}x{")); CHECK(Settings::IsValid("accent", "#4F7cff")); CHECK(!Settings::IsValid("sleepAfterMinutes", 0)); CHECK(!Settings::IsValid("defaultZoom", 9000));
+  CHECK(!Settings::IsValid("pinned", json::parse(R"([{"title":"x","url":"javascript:1"}])"))); CHECK(Settings::IsValid("pinned", json::parse(R"([{"title":"x","url":"https://a.cz"}])")));
+  CHECK(Settings::IsValid("customSearchEngines", json::parse(R"([{"id":"custom-a","name":"A","url":"https://a.cz/?q=%s"}])"))); CHECK(!Settings::IsValid("customSearchEngines", json::parse(R"([{"id":"google","name":"A","url":"https://a.cz/?q=%s"}])")));
+  CHECK(Settings::CustomEngines(json::parse(R"([{"id":"custom-a","name":"A","url":"https://a.cz/?q=%s"}])")).size() == 1);
+
   auto tmp = std::filesystem::temp_directory_path() / "hbtest"; std::filesystem::remove_all(tmp);
   { Settings s(tmp / "settings.json"); s.Load(); CHECK(s.Get<bool>("showBookmarksBar")); CHECK(!s.Set("nope", 1)); CHECK(!s.Set("theme", 5)); CHECK(s.Set("theme", "dark")); CHECK(s.Set("sleepAfterMinutes", 5));
     Settings t(tmp / "settings.json"); t.Load(); EQ(t.Get<std::string>("theme"), "dark"); CHECK(t.Get<int>("sleepAfterMinutes") == 5); CHECK(t.Get<json>("pinned").size() == 5); }
@@ -35,7 +50,7 @@ int main() {
     db.AddVisit("https://seznam.cz/", "Seznam"); db.AddVisit("https://seznam.cz/", ""); db.AddVisit("https://example.org/a_b", "Example", true);
     CHECK(db.History("", 10, 0).size() == 2); EQ(db.History("", 10, 0)[1]["title"].get<std::string>(), "Seznam"); CHECK(db.History("100%", 10, 0).empty()); CHECK(db.History("a_b", 10, 0).size() == 1);
     CHECK(db.TopSites(5)[0]["url"] == "https://seznam.cz/");
-    CHECK(db.AddBookmark("https://seznam.cz/", "Sez") > 0); CHECK(db.IsBookmarked("https://seznam.cz/")); CHECK(db.Suggest("sez", 5).size() == 1); CHECK(db.Suggest("sez", 5)[0]["type"] == "bookmark");
+    CHECK(db.AddBookmark("javascript:alert(1)", "x") == 0); CHECK(db.AddBookmark("https://seznam.cz/", "Sez") > 0); CHECK(db.IsBookmarked("https://seznam.cz/")); CHECK(db.Suggest("sez", 5).size() == 1); CHECK(db.Suggest("sez", 5)[0]["type"] == "bookmark");
     CHECK(db.RemoveBookmarkByUrl("https://seznam.cz/")); CHECK(!db.IsBookmarked("https://seznam.cz/"));
     CHECK(db.ImportBookmarks(json::parse(R"([{"url":"https://a.cz","title":"A","folder":"F"},{"url":"javascript:1"},{"url":"https://a.cz"}])")) == 1);
     int64_t d = db.AddDownload("https://x/y.zip", "C:/y.zip", "application/zip", 100); db.UpdateDownload(d, 100, 100, "done"); EQ(db.Downloads()[0]["state"].get<std::string>(), "done");

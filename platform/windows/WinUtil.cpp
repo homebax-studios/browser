@@ -76,7 +76,7 @@ std::filesystem::path FindResources()
     auto dir = ExeDir();
     for (int i = 0; i < 4; ++i)
     {
-        if (std::filesystem::exists(dir / L"resources" / L"ui" / L"chrome.html", ec)) return dir / L"resources";
+        if (std::filesystem::exists(dir / L"resources" / L"ui" / L"shell.html", ec)) return dir / L"resources";
         if (!dir.has_parent_path() || dir.parent_path() == dir) break;
         dir = dir.parent_path();
     }

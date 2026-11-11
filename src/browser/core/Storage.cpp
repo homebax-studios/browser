@@ -1,5 +1,6 @@
 #include "Storage.h"
 #include "Util.h"
+#include "Navigation.h"
 
 #include <sqlite3.h>
 
@@ -180,7 +181,7 @@ bool Storage::IsBookmarked(const std::string& url)
 
 int64_t Storage::AddBookmark(const std::string& url, const std::string& title, const std::string& folder)
 {
-    if (!db_ || url.empty()) return 0;
+    if (!db_ || url.empty() || !IsSafeTabUrl(url)) return 0;
     {
         Stmt s(db_,
                "INSERT OR IGNORE INTO bookmarks(url,title,folder,position,created)"
@@ -210,7 +211,7 @@ bool Storage::RemoveBookmark(int64_t id)
 
 bool Storage::UpdateBookmark(int64_t id, const std::string& title, const std::string& url, const std::string& folder)
 {
-    if (!db_ || url.empty()) return false;
+    if (!db_ || url.empty() || !IsSafeTabUrl(url)) return false;
     Stmt s(db_, "UPDATE OR IGNORE bookmarks SET title=?1,url=?2,folder=?3 WHERE id=?4");
     s.Text(1, title).Text(2, url).Text(3, folder).Int(4, id);
     return s.Done() && sqlite3_changes(db_) > 0;

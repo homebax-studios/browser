@@ -6,7 +6,11 @@
 
 namespace hb {
 
-const std::vector<SearchEngine>& SearchEngines()
+namespace {
+std::vector<SearchEngine>& CustomEngines() { static std::vector<SearchEngine> v; return v; }
+std::vector<SearchEngine>& MergedEngines() { static std::vector<SearchEngine> v; return v; }
+
+const std::vector<SearchEngine>& BuiltinEngines()
 {
     static const std::vector<SearchEngine> engines = {
         {"google", "Google", "https://www.google.com/search?q=%s"},
@@ -17,9 +21,52 @@ const std::vector<SearchEngine>& SearchEngines()
         {"startpage", "Startpage", "https://www.startpage.com/do/search?q=%s"},
         {"ecosia", "Ecosia", "https://www.ecosia.org/search?q=%s"},
         {"hb-search", "HB Search", "https://homebax.vercel.app/search?=%s"},
-
     };
     return engines;
+}
+
+void RebuildMerged()
+{
+    auto& m = MergedEngines();
+    m = BuiltinEngines();
+    m.insert(m.end(), CustomEngines().begin(), CustomEngines().end());
+}
+}  // namespace
+
+const std::vector<SearchEngine>& SearchEngines()
+{
+    if (MergedEngines().empty()) RebuildMerged();
+    return MergedEngines();
+}
+
+void SetCustomSearchEngines(std::vector<SearchEngine> engines)
+{
+    // Custom engines can never shadow a built-in id and must carry a valid template.
+    std::vector<SearchEngine> ok;
+    for (auto& e : engines)
+        if (StartsWith(e.id, "custom-") && !e.name.empty() && IsValidSearchTemplate(e.url)) ok.push_back(std::move(e));
+    CustomEngines() = std::move(ok);
+    RebuildMerged();
+}
+
+bool IsValidSearchTemplate(const std::string& url)
+{
+    if (url.empty() || url.size() > 2048) return false;
+    const std::string lower = ToLower(url);
+    if (!StartsWith(lower, "https://") && !StartsWith(lower, "http://")) return false;
+    for (unsigned char c : url)
+        if (c <= 0x20 || c == 0x7f) return false;
+    const auto first = url.find("%s");
+    if (first == std::string::npos || url.find("%s", first + 2) != std::string::npos) return false;
+    return !HostOf(url).empty();
+}
+
+bool IsSafeTabUrl(const std::string& url)
+{
+    const std::string scheme = SchemeOf(url);
+    if (scheme == "http" || scheme == "https") return !HostOf(url).empty();
+    if (scheme == "file" || scheme == "ftp" || scheme == "view-source") return true;
+    return ToLower(url) == "about:blank";
 }
 
 std::string SearchUrl(const std::string& engineId, const std::string& query)
@@ -144,7 +191,7 @@ std::string ResolveInput(const std::string& input, const std::string& engineId)
     const std::string lower = ToLower(in);
     if (StartsWith(lower, "hb://")) return ToInternal(in);
 
-    for (const char* scheme : {"http://", "https://", "file://", "ftp://", "edge://", "chrome://", "view-source:", "about:", "data:", "blob:"})
+    for (const char* scheme : {"http://", "https://", "file://", "ftp://", "view-source:", "about:", "data:", "blob:"})
         if (StartsWith(lower, scheme)) return in;
 
     if (LooksLikeHost(in))

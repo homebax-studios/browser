@@ -32,7 +32,7 @@ public:
     bool IsMaximized() const noexcept { return IsZoomed(hwnd_) != FALSE; }
 
     // Called by the controller. All sizes from the UI are CSS pixels.
-    void SetChromeHeight(int cssPx);
+    void SetShellHeight(int cssPx);
     void SetOverlays(std::vector<RECT> cssRects);  // popup areas (menu, suggestions...) that must be drawn above the page
     void SetFullscreen(bool on);
     void SetTheme(bool dark, COLORREF frameColor);
@@ -62,7 +62,7 @@ private:
     HWND contentHost_{};
     HBRUSH background_{};
     double scale_ = 1.0;
-    int chromeCss_ = 88;
+    int shellCss_ = 88;
     std::vector<RECT> overlays_;
     bool fullscreen_ = false;
     bool startMaximized_ = false;

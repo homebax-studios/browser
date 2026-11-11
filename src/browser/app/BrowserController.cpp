@@ -13,6 +13,7 @@
 
 #include "../core/Log.h"
 #include "../core/Navigation.h"
+#include "../core/Security.h"
 #include "../core/Util.h"
 #include "../../../platform/windows/WinUtil.h"
 
@@ -61,7 +62,7 @@ bool BrowserController::Start()
     HB_INFO("HB Browser {} starting, data dir: {}", HB_VERSION, win::Narrow(dataDir_.wstring()));
 
     std::error_code ec;
-    if (!std::filesystem::exists(resDir_ / L"ui" / L"chrome.html", ec))
+    if (!std::filesystem::exists(resDir_ / L"ui" / L"shell.html", ec))
     {
         MessageBoxW(window_.Handle(), (L"Missing resources folder:\n" + resDir_.wstring()).c_str(), L"HB Browser", MB_ICONERROR);
         return false;
@@ -70,6 +71,7 @@ bool BrowserController::Start()
     settings_ = std::make_unique<Settings>(dataDir_ / L"settings.json");
     settings_->Load();
     settings_->onChanged = [this](const std::string& key) { OnSettingChanged(key); };
+    SetCustomSearchEngines(Settings::CustomEngines(settings_->Get<json>("customSearchEngines")));
 
     storage_.Open(dataDir_ / L"browser.db");
     storage_.FailPendingDownloads();
@@ -157,6 +159,7 @@ void BrowserController::ApplyViewOptions()
 
 void BrowserController::OnSettingChanged(const std::string& key)
 {
+    if (key == "customSearchEngines") SetCustomSearchEngines(Settings::CustomEngines(settings_->Get<json>("customSearchEngines")));
     if (key == "theme" || key == "accent")
     {
         UpdateTheme();
@@ -349,7 +352,7 @@ void BrowserController::OnEnvironmentFailed(HRESULT hr)
 {
     wchar_t msg[600];
     swprintf_s(msg,
-               L"HB Browser needs the Microsoft Edge WebView2 Runtime and could not start it (error 0x%08X).\n\n"
+               L"HB Browser needs the WebView2 Runtime and could not start it (error 0x%08X).\n\n"
                L"Install the \"Evergreen\" runtime from developer.microsoft.com/microsoft-edge/webview2\n"
                L"or copy a Fixed Version runtime into the \"WebView2Runtime\" folder next to HB Browser.exe.",
                static_cast<unsigned>(hr));
@@ -383,7 +386,7 @@ void BrowserController::StartTabs()
             for (const auto& item : session["tabs"])
             {
                 const std::string url = item.value("url", "");
-                if (url.empty()) continue;
+                if (url.empty() || !IsSafeTabUrl(url)) continue;  // session.json is user-writable: never trust it
                 const bool active = index == activeIndex;
                 const int id = tabs_.Add(url, false, active);
                 if (Tab* t = tabs_.Find(id))
@@ -425,8 +428,18 @@ void BrowserController::SaveSession()
         tabs.push_back({{"url", t.url}, {"title", t.title}, {"pinned", t.pinned}});
         ++index;
     }
-    std::ofstream out(dataDir_ / L"session.json", std::ios::binary | std::ios::trunc);
-    if (out) out << Dump(json{{"tabs", tabs}, {"active", active}});
+    // Write to a temp file first so a crash cannot leave a half-written session behind.
+    const auto file = dataDir_ / L"session.json";
+    const auto tmp = std::filesystem::path(file).concat(L".tmp");
+    {
+        std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+        if (!out) return;
+        out << Dump(json{{"tabs", tabs}, {"active", active}});
+        if (!out.good()) return;
+    }
+    std::error_code ec;
+    std::filesystem::rename(tmp, file, ec);
+    if (ec) { std::filesystem::remove(file, ec); std::filesystem::rename(tmp, file, ec); }
 }
 
 // ------------------------------------------------------------------- tabs
@@ -664,7 +677,7 @@ void BrowserController::Exec(const std::string& c, const json& a)
     else if (c == "maximize") window_.ToggleMaximize();
     else if (c == "close" || c == "exit") PostMessageW(window_.Handle(), WM_CLOSE, 0, 0);
     else if (c == "drag") window_.StartDrag();
-    else if (c == "layout") window_.SetChromeHeight(a.value("height", 88));
+    else if (c == "layout") window_.SetShellHeight(a.value("height", 88));
     else if (c == "overlay")
     {
         std::vector<RECT> rects;
@@ -1044,7 +1057,12 @@ nlohmann::json BrowserController::Rpc(int tabId, const std::string& id, const st
                 {
                     const std::filesystem::path p = win::Widen(row.value("path", ""));
                     if (op == "show") win::ShowInFolder(p);
-                    else if (row.value("state", "") == "done") win::ShellOpen(p.wstring());
+                    else if (row.value("state", "") == "done")
+                    {
+                        // Never execute downloaded programs/scripts straight from the list: reveal them instead.
+                        if (IsDangerousFileName(win::Narrow(p.filename().wstring()))) { win::ShowInFolder(p); Toast("downloadUnsafe"); }
+                        else win::ShellOpen(p.wstring());
+                    }
                     return true;
                 }
         }

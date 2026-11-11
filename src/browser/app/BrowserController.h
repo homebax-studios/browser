@@ -20,7 +20,7 @@
 namespace hb {
 
 // The brain of the browser: owns tabs, settings, storage and the WebViews, executes every command
-// (from the chrome UI, keyboard shortcuts, internal pages) and pushes state back to the UI.
+// (from the browser shell UI, keyboard shortcuts, internal pages) and pushes state back to the UI.
 class BrowserController final : public IWebViewSink
 {
 public:

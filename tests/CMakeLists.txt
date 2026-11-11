@@ -1,7 +1,7 @@
 # Tests for the platform-neutral core (addresses, settings, SQLite storage, tab model).
 # They build on any OS:   cmake -S tests -B build-tests && cmake --build build-tests && ./build-tests/core_test
 cmake_minimum_required(VERSION 3.20)
-project(HBCoreTests CXX)
+project(HBCoreTests C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -14,7 +14,7 @@ endif()
 
 add_executable(core_test core_test.cpp
     ${CORE}/core/Util.cpp ${CORE}/core/Navigation.cpp ${CORE}/core/Settings.cpp
-    ${CORE}/core/Storage.cpp ${CORE}/core/TabManager.cpp)
+    ${CORE}/core/Storage.cpp ${CORE}/core/TabManager.cpp ${CORE}/core/Security.cpp)
 target_include_directories(core_test PRIVATE ${CORE} ${JSON_INCLUDE_DIR})
 
 if(EXISTS ${TP}/sqlite/sqlite3.c)

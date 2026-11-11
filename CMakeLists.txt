@@ -76,6 +76,7 @@ add_executable(HBBrowser WIN32
     src/browser/core/Settings.cpp
     src/browser/core/Storage.cpp
     src/browser/core/TabManager.cpp
+    src/browser/core/Security.cpp
     platform/windows/WinUtil.cpp
     "${CMAKE_BINARY_DIR}/HBBrowser.rc"
 )

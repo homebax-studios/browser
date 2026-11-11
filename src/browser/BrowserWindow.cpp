@@ -82,16 +82,16 @@ void BrowserWindow::Layout()
     const int x = inset, y = inset;
     const int w = std::max(0, static_cast<int>(rc.right) - 2 * inset);
     const int h = std::max(0, static_cast<int>(rc.bottom) - 2 * inset);
-    const int chrome = fullscreen_ ? 0 : std::min(h, Scaled(chromeCss_));
+    const int shellH = fullscreen_ ? 0 : std::min(h, Scaled(shellCss_));
 
-    MoveWindow(contentHost_, x, y + chrome, w, std::max(0, h - chrome), TRUE);
+    MoveWindow(contentHost_, x, y + shellH, w, std::max(0, h - shellH), TRUE);
     MoveWindow(uiHost_, x, y, w, h, TRUE);
     ShowWindow(uiHost_, fullscreen_ ? SW_HIDE : SW_SHOW);
 
     // The UI host is as big as the whole window but only the toolbar strip and open popups are "solid".
     if (!fullscreen_)
     {
-        HRGN region = CreateRectRgn(0, 0, w, chrome);
+        HRGN region = CreateRectRgn(0, 0, w, shellH);
         for (const RECT& r : overlays_)
         {
             // popups have 12 css px rounded corners, so the clip region is rounded the same way
@@ -104,15 +104,15 @@ void BrowserWindow::Layout()
     SetWindowPos(uiHost_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
     if (controller_)
-        controller_->OnLayout(RECT{0, 0, w, h}, RECT{0, 0, w, std::max(0, h - chrome)});
+        controller_->OnLayout(RECT{0, 0, w, h}, RECT{0, 0, w, std::max(0, h - shellH)});
     InvalidateRect(hwnd_, nullptr, FALSE);
 }
 
-void BrowserWindow::SetChromeHeight(int cssPx)
+void BrowserWindow::SetShellHeight(int cssPx)
 {
     cssPx = std::max(40, std::min(cssPx, 400));
-    if (cssPx == chromeCss_) return;
-    chromeCss_ = cssPx;
+    if (cssPx == shellCss_) return;
+    shellCss_ = cssPx;
     Layout();
 }
 

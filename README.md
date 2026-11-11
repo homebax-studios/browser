@@ -111,7 +111,7 @@ This provides compatibility with modern web technologies while allowing the brow
 4. Follow the installation instructions.
 5. Launch HB Browser.
 
-**Note:** Microsoft Edge WebView2 Runtime is required for web rendering.
+**Note:** WebView2 Runtime is required for web rendering.
 
 ## Development
 

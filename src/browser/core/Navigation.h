@@ -11,7 +11,14 @@ struct SearchEngine
     std::string url;  // %s = encoded query
 };
 
+// Built-in engines followed by the user's custom engines (ids start with "custom-").
 const std::vector<SearchEngine>& SearchEngines();
+void SetCustomSearchEngines(std::vector<SearchEngine> engines);
+// http(s) URL that contains %s exactly once, no spaces/control characters, at most 2048 bytes.
+bool IsValidSearchTemplate(const std::string& url);
+
+// Schemes a tab may be restored to / a bookmark may point at: http, https, file, ftp, view-source, about:blank.
+bool IsSafeTabUrl(const std::string& url);
 std::string SearchUrl(const std::string& engineId, const std::string& query);
 
 // Turns whatever the user typed into the address bar into a loadable URL.

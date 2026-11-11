@@ -32,7 +32,7 @@
       { key: 'theme', type: 'select', opts: [['system', 'theme_system'], ['light', 'theme_light'], ['dark', 'theme_dark']] },
       { key: 'accent', type: 'accent' },
       { key: 'showBookmarksBar', type: 'toggle' }, { key: 'showHomeButton', type: 'toggle' } ] },
-    { id: 'search', icon: 'search', items: [{ key: 'searchEngine', type: 'engines' }] },
+    { id: 'search', icon: 'search', items: [{ key: 'searchEngine', type: 'engines' }, { key: 'customSearchEngines', type: 'customEngines' }] },
     { id: 'privacy', icon: 'shield', items: [
       { key: 'trackingPrevention', type: 'select', opts: [['off', 'tp_off'], ['basic', 'tp_basic'], ['balanced', 'tp_balanced'], ['strict', 'tp_strict']] },
       { key: 'passwordAutosave', type: 'toggle' }, { key: 'generalAutofill', type: 'toggle' }, { key: 'clearOnExit', type: 'toggle' }, { type: 'clearData' } ] },
@@ -53,6 +53,9 @@
       case 'select': return row(lab(it.key), hnt(it.key), '<select data-key="' + it.key + '"' + (it.num ? ' data-num' : '') + '>' +
         it.opts.map((o) => '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(t(o[1])) + (it.unit ? ' ' + esc(t(it.unit)) : '') + '</option>').join('') + '</select>');
       case 'engines': return row(lab(it.key), '', '<select data-key="searchEngine">' + info.engines.map((e) => '<option value="' + e.id + '"' + (e.id === v ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>');
+      case 'customEngines': return '<div class="row"><div class="grow"><div class="label">' + esc(t('s_customEngines')) + '</div><div class="hint">' + esc(t('h_customEngines')) + '</div></div></div>' +
+        (S.customSearchEngines || []).map((e) => row(e.name, e.url, '<button class="btn" data-act="delEngine" data-id="' + esc(e.id) + '">' + esc(t('removeEngine')) + '</button>')).join('') +
+        '<div class="row"><input type="text" id="ceName" placeholder="' + esc(t('engineName')) + '"><input class="wide" type="text" id="ceUrl" placeholder="' + esc(t('engineUrl')) + '"><button class="btn primary" data-act="addEngine">' + esc(t('addEngine')) + '</button></div><div class="row"><div class="grow muted" id="ceMsg"></div></div>';
       case 'accent': return row(lab('accent'), '', '<div class="swatches">' + PRESETS.map((c) => '<button class="sw' + (c.toLowerCase() === String(v).toLowerCase() ? ' on' : '') + '" style="background:' + c + '" data-accent="' + c + '"></button>').join('') +
         '<input type="color" id="accentPick" value="' + esc(v) + '"></div>');
       case 'folder': return row(lab('downloadDir'), info.downloadDir, '<button class="btn" data-act="pick">' + esc(t('choose')) + '</button><button class="btn" data-act="resetDir">' + esc(t('reset')) + '</button>');
@@ -88,6 +91,20 @@
     const a = e.target.closest('[data-act]'); if (!a) return;
     if (a.dataset.act === 'pick') { await hb.call('settings.pickFolder'); info = await hb.call('app.info'); S = await hb.call('settings.get'); render(); }
     else if (a.dataset.act === 'resetDir') { await set('downloadDir', ''); info = await hb.call('app.info'); render(); }
+    else if (a.dataset.act === 'addEngine') {
+      const name = document.getElementById('ceName').value.trim(), url = document.getElementById('ceUrl').value.trim();
+      const id = 'custom-' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'engine') + '-' + Date.now().toString(36);
+      const list = (S.customSearchEngines || []).concat([{ id, name, url }]);
+      const ok = name && await set('customSearchEngines', list);
+      if (!ok) { document.getElementById('ceMsg').textContent = t('engineInvalid'); return; }
+      info = await hb.call('app.info'); S = await hb.call('settings.get'); render();
+    }
+    else if (a.dataset.act === 'delEngine') {
+      const list = (S.customSearchEngines || []).filter((x) => x.id !== a.dataset.id);
+      await set('customSearchEngines', list);
+      if (S.searchEngine === a.dataset.id) await set('searchEngine', 'google');
+      info = await hb.call('app.info'); S = await hb.call('settings.get'); render();
+    }
     else if (a.dataset.act === 'setDefault') await hb.call('settings.setDefaultBrowser');
     else if (a.dataset.act === 'clear') {
       const kinds = [...document.querySelectorAll('[data-clear]:checked')].map((c) => c.dataset.clear);
