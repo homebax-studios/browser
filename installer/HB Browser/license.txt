@@ -1,0 +1,28 @@
+# HB Browser – Bezpečnostní upozornění a licenční podmínky
+
+Tento software je vyvíjen a poskytován společností **Homebax Studios**.
+
+## 1. Bezpečnost a odpovědnost
+
+Software je poskytován „TAK, JAK JE“ (AS IS), bez jakýchkoliv výslovných či předpokládaných záruk.
+
+Instalací a používáním softwaru přebíráte odpovědnost za jeho používání a případné následky.
+
+Pokračujte pouze v případě, že důvěřujete původu softwaru a jeho vydavateli.
+
+**Používáte na vlastní nebezpečí.**
+
+## 2. Open-source licence a podmínky
+
+HB Browser je open-source software. Jeho zdrojový kód lze používat, studovat, upravovat a dále distribuovat za následujících podmínek:
+
+- **Uvedení autora:** Při použití nebo distribuci musíte uvést původního autora a Homebax Studios.
+- **Uvedení změn:** Pokud zdrojový kód upravíte, musíte jasně označit provedené změny.
+- **Ochrana značky:** Nesmíte používat loga, grafické prvky, názvy ani identitu HB Browser a Homebax Studios způsobem, který by naznačoval oficiální původ, schválení nebo spojení s původním projektem.
+- **Vlastní distribuce:** Upravené verze musí být jasně odlišitelné od oficiální verze HB Browser.
+
+## 3. Závěrečné ustanovení
+
+Používáním tohoto softwaru potvrzujete, že jste se s těmito podmínkami seznámili a souhlasíte s nimi.
+
+© Homebax Studios. All rights reserved.

@@ -6,6 +6,7 @@
     if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
     return s;
   };
+  window.useDict = (d, lang) => { dict = d || {}; document.documentElement.lang = lang || 'en'; };
   window.applyI18n = (root) => {
     const r = root || document;
     r.querySelectorAll('[data-i18n]').forEach((e) => { e.textContent = t(e.dataset.i18n); });
@@ -33,13 +34,23 @@
     }
   };
   // Common bootstrap for hb:// pages.
-  window.initPage = async () => {
+  window.initPage = async (opts) => {
+    const top = (opts && opts.top) || 0;
     const load = async () => {
-      const [settings, info] = await Promise.all([hb.call('settings.get'), hb.call('app.info')]);
-      await loadLang(settings.language);
-      applyTheme(info.dark, settings.accent);
-      hydrateIcons();
-      return { settings, info };
+      try {
+        // one native round trip: settings + info + translations (+ top sites)
+        const r = await hb.call('page.init', { top });
+        useDict(r.dict, r.lang); applyI18n();
+        applyTheme(r.info.dark, r.settings.accent);
+        hydrateIcons();
+        return { settings: r.settings, info: r.info, top: r.top || [] };
+      } catch (e) {
+        const [settings, info] = await Promise.all([hb.call('settings.get'), hb.call('app.info')]);
+        await loadLang(settings.language);
+        applyTheme(info.dark, settings.accent);
+        hydrateIcons();
+        return { settings, info, top: top ? await hb.call('topsites', { limit: top }) : [] };
+      }
     };
     const first = await load();
     hb.on('event', async () => {
