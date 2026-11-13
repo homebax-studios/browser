@@ -191,5 +191,22 @@
  "f_openTabs": "Open tabs",
  "k_address": "Address bar",
  "k_switch": "Switch tab",
- "k_zoom": "Zoom"
+ "k_zoom": "Zoom",
+ "m_savePdf": "Save page as PDF",
+ "m_screenshot": "Screenshot of page",
+ "m_reader": "Reader view",
+ "m_night": "Dark page (toggle)",
+ "toast_pdfSaved": "PDF saved to Downloads",
+ "toast_shotSaved": "Screenshot saved to Downloads",
+ "toast_actionFailed": "This is not possible on this page",
+ "toast_downloadBlocked": "Blocked a program downloaded over an insecure connection",
+ "s_checkUpdates": "Check for updates at start",
+ "h_checkUpdates": "Opens the update page when a new version exists",
+ "s_blockInsecureDownloads": "Block programs from insecure (http) downloads",
+ "s_sitePerms": "Site permissions",
+ "h_sitePerms": "Forget all allowed/blocked permissions (camera, location ...)",
+ "s_liteMode": "Low-end mode",
+ "h_liteMode": "Fewer processes and lighter rendering for weak computers (applies after restart)",
+ "opt_on": "On",
+ "opt_off": "Off"
 }

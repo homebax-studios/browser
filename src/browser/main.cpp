@@ -27,6 +27,12 @@ std::string ToUrl(const std::wstring& arg)
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
+    // Process hardening: only load DLLs from system32 / our own folder, abort on heap corruption.
+    if (HMODULE k32 = GetModuleHandleW(L"kernel32.dll"))
+        if (auto fn = reinterpret_cast<BOOL(WINAPI*)(DWORD)>(GetProcAddress(k32, "SetDefaultDllDirectories")))
+            fn(0x00000800 /*LOAD_LIBRARY_SEARCH_SYSTEM32*/ | 0x00000200 /*LOAD_LIBRARY_SEARCH_APPLICATION_DIR*/);
+    HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
+
     hb::win::EnableDpiAwareness();
 
     hb::StartupOptions options;

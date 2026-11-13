@@ -63,6 +63,9 @@ public:
     bool OnAccelerator(int tabId, UINT vk, bool repeat) override;
     void OnDownloadStarting(int tabId, ICoreWebView2DownloadOperation* op, ICoreWebView2DownloadStartingEventArgs* args) override;
     void OnProcessFailed(int tabId, bool renderCrashed) override;
+    void OnPermissionRequested(int tabId, const std::string& origin, int kind, bool userInitiated,
+                               wil::com_ptr<ICoreWebView2PermissionRequestedEventArgs> args,
+                               wil::com_ptr<ICoreWebView2Deferral> deferral) override;
 
 private:
     struct DownloadItem
@@ -112,6 +115,9 @@ private:
     void PushDownloads();
 
     std::string LanguageTag() const;
+    void StartUpdateCheck(int tabId, const std::string& id, bool startup);
+    nlohmann::json BuildInfo();
+    nlohmann::json Dictionary(const std::string& lang);
     std::filesystem::path DownloadDir() const;
     std::string SecurityOf(const Tab& t) const;
     bool IsInternalTab(int id) const;
@@ -127,6 +133,8 @@ private:
     std::map<int64_t, DownloadItem> downloads_;
 
     bool uiReady_ = false;
+    bool updateSiteShown_ = false;
+    std::map<std::string, nlohmann::json> dictCache_;
     bool envReady_ = false;
     bool dark_ = false;
     bool pushScheduled_ = false;

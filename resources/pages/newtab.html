@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><title>Nová karta</title>
+<html lang="cs"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Nová karta</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
 <style>
@@ -46,17 +46,17 @@
   const tile = (it, removable) => '<a class="tile" href="#" data-url="' + esc(it.url) + '"><span class="b" style="background:' + hue(host(it.url)) + '">' +
     esc((it.title || host(it.url)).trim().charAt(0).toUpperCase()) + '</span><span class="n">' + esc(it.title || host(it.url)) + '</span>' +
     (removable ? '<button class="x" data-rm="' + esc(it.url) + '">' + icon('close', 12) + '</button>' : '') + '</a>';
-  async function render() {
+  async function render(topList) {
     document.getElementById('pinned').innerHTML = pinned.map((p) => tile(p, true)).join('') +
       '<a class="tile add" href="#" data-add><span class="b">' + icon('plus', 22) + '</span><span class="n">' + t('nt_add') + '</span></a>';
-    const top = (await hb.call('topsites', { limit: 8 })).filter((x) => !pinned.some((p) => p.url === x.url)).slice(0, 6);
+    const top = (topList || await hb.call('topsites', { limit: 8 })).filter((x) => !pinned.some((p) => p.url === x.url)).slice(0, 6);
     document.getElementById('topWrap').hidden = !top.length;
     document.getElementById('top').innerHTML = top.map((x) => tile(x, false)).join('');
   }
-  const { settings } = await initPage();
-  pinned = settings.pinned || [];
-  await render();
-  window.addEventListener('hb-settings', async (e) => { pinned = e.detail.settings.pinned || []; await render(); });
+  const first = await initPage({ top: 8 });
+  pinned = first.settings.pinned || [];
+  await render(first.top);
+  window.addEventListener('hb-settings', async (e) => { pinned = e.detail.settings.pinned || []; await render(e.detail.top); });
   document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); const v = q.value.trim(); if (v) hb.call('nav', { url: v }); });
   document.addEventListener('click', async (e) => {
     const rm = e.target.closest('[data-rm]');

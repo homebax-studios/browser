@@ -283,7 +283,8 @@
     ['eye', 'm_privateTab', '', 'newPrivateTab'], ['eye', 'm_privateWindow', 'Ctrl+Shift+N', 'newPrivateWindow'], '-',
     ['bookmark', 'm_bookmarks', '', 'openPage', { name: 'bookmarks' }], ['history', 'm_history', 'Ctrl+H', 'openPage', { name: 'history' }],
     ['download', 'm_downloads', 'Ctrl+J', 'openPage', { name: 'downloads' }], '-', 'ZOOM',
-    ['search', 'm_find', 'Ctrl+F', 'openFind'], ['print', 'm_print', 'Ctrl+P', 'print'], ['code', 'm_devtools', 'F12', 'devtools'],
+    ['search', 'm_find', 'Ctrl+F', 'openFind'], ['print', 'm_print', 'Ctrl+P', 'print'], ['file', 'm_savePdf', '', 'savePdf'], ['window', 'm_screenshot', '', 'screenshot'],
+    ['file', 'm_reader', '', 'reader'], ['sun', 'm_night', '', 'pageNight'], ['code', 'm_devtools', 'F12', 'devtools'],
     ['file', 'm_viewSource', 'Ctrl+U', 'viewSource'], '-',
     ['sliders', 'm_settings', 'Ctrl+,', 'openPage', { name: 'settings' }], ['info', 'm_about', '', 'openPage', { name: 'about' }], ['power', 'm_exit', '', 'exit'],
   ];

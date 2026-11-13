@@ -41,6 +41,10 @@ public:
     virtual bool OnAccelerator(int tabId, UINT vk, bool repeat) = 0;
     virtual void OnDownloadStarting(int tabId, ICoreWebView2DownloadOperation* op, ICoreWebView2DownloadStartingEventArgs* args) = 0;
     virtual void OnProcessFailed(int tabId, bool renderCrashed) = 0;
+    // The sink must call args->put_State() and deferral->Complete() (possibly later).
+    virtual void OnPermissionRequested(int tabId, const std::string& origin, int kind, bool userInitiated,
+                                       wil::com_ptr<ICoreWebView2PermissionRequestedEventArgs> args,
+                                       wil::com_ptr<ICoreWebView2Deferral> deferral) = 0;
 };
 
 struct ViewOptions
@@ -75,7 +79,9 @@ public:
                    std::filesystem::path resourcesDir);
     ~WebViewManager();
 
-    void Initialize(const std::wstring& language);
+    // lite = fewer renderer processes and cheaper rendering for weak machines (decided once per start).
+    void Initialize(const std::wstring& language, bool lite = false);
+    const std::string& RuntimeVersion() const { return runtimeVersion_; }
     void CreateUi();
     void CreateTab(int id, const std::wstring& url, bool isPrivate, std::shared_ptr<NewWindowAdopt> adopt = nullptr);
     void CloseTab(int id);
@@ -90,6 +96,9 @@ public:
     void Stop(int id);
     void ExecuteScript(int id, const std::wstring& js, std::function<void(std::string)> done = {});
     void OpenDevTools(int id);
+    // Save the page as PDF / PNG screenshot of the visible area; done(true) on success.
+    void SavePdf(int id, const std::wstring& path, std::function<void(bool)> done);
+    void Screenshot(int id, const std::wstring& path, std::function<void(bool)> done);
     void FocusTab(int id);
     void FocusUi();
 
@@ -141,6 +150,7 @@ private:
     int activeId_ = -1;
     bool privateSupported_ = true;
     bool initialized_ = false;
+    std::string runtimeVersion_;
 };
 
 }  // namespace hb

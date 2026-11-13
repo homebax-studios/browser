@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><title>Nastavení</title>
+<html lang="cs"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Nastavení</title>
 <link rel="stylesheet" href="../shared/base.css"><link rel="stylesheet" href="../shared/page.css">
 <style>
  .layout { display: grid; grid-template-columns: 210px 1fr; gap: 26px; max-width: 1040px; margin: 0 auto; padding: 36px 28px 80px; }
@@ -25,7 +25,7 @@
   const SECTIONS = [
     { id: 'general', icon: 'home', items: [
       { key: 'startup', type: 'select', opts: [['restore', 'opt_restore'], ['newtab', 'opt_newtab'], ['home', 'opt_home']] },
-      { key: 'homepage', type: 'text' },
+      { key: 'homepage', type: 'text' }, { key: 'checkUpdates', type: 'toggle' },
       { key: 'language', type: 'select', opts: [['auto', 'lang_auto'], ['cs', 'Čeština'], ['en', 'English']] },
       { type: 'button', id: 'defaultBrowser', label: 's_defaultBrowser', hint: 'h_defaultBrowser', btn: 'setDefault' } ] },
     { id: 'appearance', icon: 'sun', items: [
@@ -35,9 +35,10 @@
     { id: 'search', icon: 'search', items: [{ key: 'searchEngine', type: 'engines' }, { key: 'customSearchEngines', type: 'customEngines' }] },
     { id: 'privacy', icon: 'shield', items: [
       { key: 'trackingPrevention', type: 'select', opts: [['off', 'tp_off'], ['basic', 'tp_basic'], ['balanced', 'tp_balanced'], ['strict', 'tp_strict']] },
-      { key: 'passwordAutosave', type: 'toggle' }, { key: 'generalAutofill', type: 'toggle' }, { key: 'clearOnExit', type: 'toggle' }, { type: 'clearData' } ] },
+      { key: 'passwordAutosave', type: 'toggle' }, { key: 'generalAutofill', type: 'toggle' }, { key: 'clearOnExit', type: 'toggle' }, { key: 'blockInsecureDownloads', type: 'toggle' }, { type: 'resetPerms' }, { type: 'clearData' } ] },
     { id: 'downloads', icon: 'download', items: [{ key: 'downloadDir', type: 'folder' }, { key: 'askDownloadLocation', type: 'toggle' }] },
     { id: 'performance', icon: 'zzz', items: [
+      { key: 'liteMode', type: 'select', opts: [['auto', 'lang_auto'], ['on', 'opt_on'], ['off', 'opt_off']] },
       { key: 'memorySaver', type: 'toggle' },
       { key: 'sleepAfterMinutes', type: 'select', num: true, opts: [[5, '5'], [10, '10'], [15, '15'], [30, '30'], [60, '60']], unit: 'minutes' },
       { key: 'defaultZoom', type: 'select', num: true, opts: [75, 80, 90, 100, 110, 125, 150, 175, 200].map((z) => [z, z + ' %']) } ] },
@@ -53,6 +54,7 @@
       case 'select': return row(lab(it.key), hnt(it.key), '<select data-key="' + it.key + '"' + (it.num ? ' data-num' : '') + '>' +
         it.opts.map((o) => '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(t(o[1])) + (it.unit ? ' ' + esc(t(it.unit)) : '') + '</option>').join('') + '</select>');
       case 'engines': return row(lab(it.key), '', '<select data-key="searchEngine">' + info.engines.map((e) => '<option value="' + e.id + '"' + (e.id === v ? ' selected' : '') + '>' + esc(e.name) + '</option>').join('') + '</select>');
+      case 'resetPerms': return row(t('s_sitePerms'), t('h_sitePerms'), '<button class="btn" data-act="resetPerms">' + esc(t('reset')) + '</button>');
       case 'customEngines': return '<div class="row"><div class="grow"><div class="label">' + esc(t('s_customEngines')) + '</div><div class="hint">' + esc(t('h_customEngines')) + '</div></div></div>' +
         (S.customSearchEngines || []).map((e) => row(e.name, e.url, '<button class="btn" data-act="delEngine" data-id="' + esc(e.id) + '">' + esc(t('removeEngine')) + '</button>')).join('') +
         '<div class="row"><input type="text" id="ceName" placeholder="' + esc(t('engineName')) + '"><input class="wide" type="text" id="ceUrl" placeholder="' + esc(t('engineUrl')) + '"><button class="btn primary" data-act="addEngine">' + esc(t('addEngine')) + '</button></div><div class="row"><div class="grow muted" id="ceMsg"></div></div>';
@@ -91,6 +93,7 @@
     const a = e.target.closest('[data-act]'); if (!a) return;
     if (a.dataset.act === 'pick') { await hb.call('settings.pickFolder'); info = await hb.call('app.info'); S = await hb.call('settings.get'); render(); }
     else if (a.dataset.act === 'resetDir') { await set('downloadDir', ''); info = await hb.call('app.info'); render(); }
+    else if (a.dataset.act === 'resetPerms') { await set('sitePermissions', {}); a.textContent = '✓'; }
     else if (a.dataset.act === 'addEngine') {
       const name = document.getElementById('ceName').value.trim(), url = document.getElementById('ceUrl').value.trim();
       const id = 'custom-' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'engine') + '-' + Date.now().toString(36);

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(HBBrowser VERSION 2.1.2 LANGUAGES C CXX)
+project(HBBrowser VERSION 2.5.0 LANGUAGES C CXX)
 
 if(NOT WIN32)
     message(FATAL_ERROR "HB Browser (WebView2) is a Windows application. Other platforms will get their own front-end under platform/.")
@@ -103,7 +103,12 @@ target_link_libraries(HBBrowser PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(HBBrowser PRIVATE /W4 /permissive- /EHsc /utf-8)
+    target_compile_options(HBBrowser PRIVATE /W4 /permissive- /EHsc /utf-8 /GS $<$<NOT:$<CONFIG:Debug>>:/guard:cf>)
+    # Exploit mitigations: ASLR, DEP, control-flow guard (not combinable with the Debug edit-and-continue mode).
+    target_link_options(HBBrowser PRIVATE /DYNAMICBASE /NXCOMPAT $<$<NOT:$<CONFIG:Debug>>:/guard:cf>)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        target_link_options(HBBrowser PRIVATE /HIGHENTROPYVA)
+    endif()
     # The manifest (DPI awareness, UTF-8, long paths) comes from the .rc file.
     target_link_options(HBBrowser PRIVATE /MANIFEST:NO)
 endif()

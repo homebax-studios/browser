@@ -18,7 +18,7 @@
 #include "../../../platform/windows/WinUtil.h"
 
 #ifndef HB_VERSION
-#define HB_VERSION "2.2.2"
+#define HB_VERSION "2.5.0"
 #endif
 
 using Microsoft::WRL::Callback;
@@ -30,6 +30,9 @@ namespace {
 constexpr UINT_PTR kTimerHousekeeping = 1;
 constexpr UINT_PTR kTimerPush = 2;
 constexpr UINT_PTR kTimerDefer = 3;
+// Page scripts run inside the page (ExecuteScript); constructed style sheets are not blocked by a page's CSP.
+const wchar_t* kNightJs = LR"JS((()=>{try{const k='__hbNight';if(window[k]){document.adoptedStyleSheets=document.adoptedStyleSheets.filter(s=>s!==window[k]);window[k]=null;return}const s=new CSSStyleSheet();s.replaceSync('html{filter:invert(1) hue-rotate(180deg)!important;background:#fff}img,picture,video,canvas,iframe{filter:invert(1) hue-rotate(180deg)!important}');document.adoptedStyleSheets=[...document.adoptedStyleSheets,s];window[k]=s}catch(e){}})())JS";
+const wchar_t* kReaderJs = LR"JS((()=>{try{if(window.__hbReader)return;window.__hbReader=1;const ps=n=>n.querySelectorAll('p').length;let pick=document.querySelector('article')||document.querySelector('main');if(!pick||ps(pick)<2){pick=[...document.querySelectorAll('div,section')].filter(x=>ps(x)>2).sort((a,b)=>b.innerText.length-a.innerText.length)[0]||document.body}const c=pick.cloneNode(true);c.querySelectorAll('script,style,iframe,form,nav,aside,footer,noscript,button,video,[role=banner],[aria-hidden=true]').forEach(n=>n.remove());const t=document.title;document.querySelectorAll('link[rel=stylesheet],style').forEach(n=>n.remove());const st=document.createElement('style');st.textContent='body{max-width:720px;margin:40px auto;padding:0 20px;font:19px/1.7 Georgia,serif;color:#222;background:#faf8f3}img{max-width:100%;height:auto}a{color:#2456d8}h1{font:700 30px/1.25 system-ui,sans-serif}@media(prefers-color-scheme:dark){body{background:#1b1b1d;color:#ddd}a{color:#8fb0ff}}';document.head.append(st);const h=document.createElement('h1');h.textContent=t;document.body.replaceChildren(h,c);window.scrollTo(0,0)}catch(e){}})())JS";
 const char* kUpdateUrl = "https://homebax.vercel.app/browser/info.json"; 
 
 const COLORREF kFrameDark = RGB(28, 29, 33);
@@ -83,7 +86,20 @@ bool BrowserController::Start()
     views_ = std::make_unique<WebViewManager>(window_.UiHost(), window_.ContentHost(), *this, dataDir_ / L"WebView2", resDir_);
     UpdateTheme();
     ApplyViewOptions();
-    views_->Initialize(win::Widen(LanguageTag()));
+    window_.Relayout();  // the first layout ran before the views existed
+    bool lite = false;
+    {
+        const std::string mode = settings_->Get<std::string>("liteMode");
+        if (mode == "on") lite = true;
+        else if (mode == "auto")
+        {
+            MEMORYSTATUSEX ms{sizeof(ms)};
+            SYSTEM_INFO si{};
+            GetSystemInfo(&si);
+            lite = (GlobalMemoryStatusEx(&ms) && ms.ullTotalPhys <= (4ull << 30)) || si.dwNumberOfProcessors <= 2;
+        }
+    }
+    views_->Initialize(win::Widen(LanguageTag()), lite);
     return true;
 }
 
@@ -346,7 +362,12 @@ void BrowserController::OnTimer(UINT_PTR id)
 
 // ------------------------------------------------------------------ startup
 
-void BrowserController::OnEnvironmentReady() { views_->CreateUi(); }
+void BrowserController::OnEnvironmentReady()
+{
+    // Browser UI and the first tab are created in parallel instead of one after the other.
+    views_->CreateUi();
+    StartTabs();
+}
 
 void BrowserController::OnEnvironmentFailed(HRESULT hr)
 {
@@ -659,7 +680,14 @@ void BrowserController::OnUiMessage(const std::string& jsonText)
     {
         uiReady_ = true;
         bookmarksDirty_ = true;
-        StartTabs();
+        PushState();
+        if (const Tab* t = tabs_.Active(); t && IsInternalUrl(t->url) && ToDisplay(t->url) == "hb://newtab")
+        {
+            views_->FocusUi();
+            uiFocused_ = true;
+            PostUi({{"type", "focusOmnibox"}});
+        }
+        if (settings_->Get<bool>("checkUpdates") && !options_.privateMode) StartUpdateCheck(0, "null", true);
         return;
     }
     Exec(cmd, j);
@@ -809,7 +837,33 @@ void BrowserController::Exec(const std::string& c, const json& a)
     else if (c == "zoomIn") Zoom(1);
     else if (c == "zoomOut") Zoom(-1);
     else if (c == "zoomReset") Zoom(0);
-    else if (c == "devtools") views_->OpenDevTools(aid);
+    else if (c == "devtools")
+    {
+        if (window_.HasDock()) window_.CloseDock();
+        else { views_->OpenDevTools(aid); window_.BeginDock(); }
+    }
+    else if (c == "savePdf" || c == "screenshot")
+    {
+        if (!act || IsInternalUrl(act->url)) Toast("actionFailed");
+        else
+        {
+            const bool pdf = c == "savePdf";
+            std::string title = act->title.empty() ? std::string("page") : act->title;
+            size_t cut = std::min<size_t>(title.size(), 80);
+            while (cut > 0 && cut < title.size() && (static_cast<unsigned char>(title[cut]) & 0xC0) == 0x80) --cut;
+            title.resize(cut);
+            const auto path = win::UniquePath(DownloadDir(), win::Widen(SanitizeFileName(title)) + (pdf ? L".pdf" : L".png"));
+            auto done = [this, pdf](bool ok) { if (!shuttingDown_) Toast(ok ? (pdf ? "pdfSaved" : "shotSaved") : "actionFailed"); };
+            if (pdf) views_->SavePdf(aid, path.wstring(), done);
+            else views_->Screenshot(aid, path.wstring(), done);
+        }
+    }
+    else if (c == "pageNight" || c == "reader")
+    {
+        const std::string scheme = act ? SchemeOf(act->url) : std::string();
+        if (scheme == "http" || scheme == "https") views_->ExecuteScript(aid, c == "reader" ? kReaderJs : kNightJs);
+        else Toast("actionFailed");
+    }
     else if (c == "print") views_->ExecuteScript(aid, L"window.print()");
     else if (c == "viewSource") { if (act) NewTab("view-source:" + act->url, false, true, aid, false); }
 
@@ -938,20 +992,16 @@ void BrowserController::Reply(int tabId, const std::string& id, bool ok, const j
 
 nlohmann::json BrowserController::Rpc(int tabId, const std::string& id, const std::string& cmd, const json& a, bool& deferred)
 {
-    if (cmd == "app.info")
+    if (cmd == "app.info") return BuildInfo();
+    if (cmd == "page.init")
     {
-        json engines = json::array();
-        for (const auto& e : SearchEngines()) engines.push_back({{"id", e.id}, {"name", e.name}});
-        LPWSTR ver = nullptr;
-        std::string runtime;
-        if (SUCCEEDED(GetAvailableCoreWebView2BrowserVersionString(nullptr, &ver)) && ver)
-        {
-            runtime = win::Narrow(ver);
-            CoTaskMemFree(ver);
-        }
-        return {{"version", HB_VERSION}, {"runtime", runtime}, {"dataDir", win::Narrow(dataDir_.wstring())},
-                {"downloadDir", win::Narrow(DownloadDir().wstring())}, {"dark", dark_}, {"engines", engines},
-                {"accent", settings_->Get<std::string>("accent")}, {"tabs", static_cast<int>(tabs_.Count())}};
+        // One round trip instead of settings + info + translations + top sites (internal pages start much faster).
+        std::string lang = settings_->Get<std::string>("language");
+        if (lang != "cs" && lang != "en") lang = StartsWith(ToLower(LanguageTag()), "cs") ? "cs" : "en";
+        json out = {{"settings", settings_->All()}, {"info", BuildInfo()}, {"lang", lang}, {"dict", Dictionary(lang)}};
+        const int top = (a.is_object() && a.contains("top") && a["top"].is_number_integer()) ? std::clamp(a["top"].get<int>(), 0, 50) : 0;
+        if (top > 0) out["top"] = storage_.TopSites(top);
+        return out;
     }
     if (cmd == "settings.get") return settings_->All();
     if (cmd == "settings.set")
@@ -1072,30 +1122,57 @@ nlohmann::json BrowserController::Rpc(int tabId, const std::string& id, const st
     if (cmd == "update.check")
     {
         deferred = true;
-        const HWND hwnd = window_.Handle();
-        std::thread([hwnd, tabId, id]
-        {
-            std::string body;
-            json out = {{"tab", tabId}, {"id", id}, {"ok", false}, {"result", nullptr}};
-            if (win::HttpGet(win::Widen(kUpdateUrl), body))
-            {
-                const json info = json::parse(body, nullptr, false);
-                if (info.is_object() && info.contains("version") && info["version"].is_string())
-                {
-                    const std::string latest = info["version"].get<std::string>();
-                    out["ok"] = true;
-                    out["result"] = {{"latest", latest}, {"current", HB_VERSION},
-                                     {"available", CompareVersions(latest, HB_VERSION) > 0},
-                                     {"url", info.value("url", "")}};
-                }
-            }
-            auto* payload = new std::string(Dump(out));
-            if (!PostMessageW(hwnd, BrowserWindow::kMsgUpdateResult, 0, reinterpret_cast<LPARAM>(payload))) delete payload;
-        }).detach();
+        StartUpdateCheck(tabId, id, false);
         return nullptr;
     }
 
     throw std::runtime_error("unknown command: " + cmd);
+}
+
+json BrowserController::BuildInfo()
+{
+    json engines = json::array();
+    for (const auto& e : SearchEngines()) engines.push_back({{"id", e.id}, {"name", e.name}});
+    return {{"version", HB_VERSION}, {"runtime", views_ ? views_->RuntimeVersion() : std::string()}, {"dataDir", win::Narrow(dataDir_.wstring())},
+            {"downloadDir", win::Narrow(DownloadDir().wstring())}, {"dark", dark_}, {"engines", engines},
+            {"accent", settings_->Get<std::string>("accent")}, {"tabs", static_cast<int>(tabs_.Count())}};
+}
+
+json BrowserController::Dictionary(const std::string& lang)
+{
+    auto it = dictCache_.find(lang);
+    if (it != dictCache_.end()) return it->second;
+    std::ifstream in(resDir_ / L"translations" / win::Widen(lang + ".json"), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    json d = json::parse(ss.str(), nullptr, false);
+    if (!d.is_object()) d = json::object();
+    return dictCache_[lang] = std::move(d);
+}
+
+void BrowserController::StartUpdateCheck(int tabId, const std::string& id, bool startup)
+{
+    const HWND hwnd = window_.Handle();
+    std::thread([hwnd, tabId, id, startup]
+    {
+        std::string body;
+        json out = {{"tab", tabId}, {"id", id}, {"ok", false}, {"result", nullptr}, {"startup", startup}};
+        if (win::HttpGet(win::Widen(kUpdateUrl), body))
+        {
+            const json info = json::parse(body, nullptr, false);
+            auto str = [&info](const char* key) { return info.contains(key) && info[key].is_string() ? info[key].get<std::string>() : std::string(); };
+            if (info.is_object() && !str("version").empty())
+            {
+                const std::string latest = str("version");
+                out["ok"] = true;
+                out["result"] = {{"latest", latest}, {"current", HB_VERSION},
+                                 {"available", CompareVersions(latest, HB_VERSION) > 0},
+                                 {"url", str("url")}, {"site", str("update-site")}};
+            }
+        }
+        auto* payload = new std::string(Dump(out));
+        if (!PostMessageW(hwnd, BrowserWindow::kMsgUpdateResult, 0, reinterpret_cast<LPARAM>(payload))) delete payload;
+    }).detach();
 }
 
 void BrowserController::OnUpdateResult(std::string* payload)
@@ -1103,15 +1180,78 @@ void BrowserController::OnUpdateResult(std::string* payload)
     std::unique_ptr<std::string> owned(payload);
     const json j = json::parse(*owned, nullptr, false);
     if (!j.is_object()) return;
-    // Only reply with the update URL when it is http(s).
+    // Links coming from the server are only used when they are well-formed: url http(s), update site https.
     json result = j.value("result", json());
+    std::string site;
     if (result.is_object())
     {
         const std::string scheme = SchemeOf(result.value("url", ""));
         if (scheme != "http" && scheme != "https") result["url"] = "";
+        site = result.value("site", "");
+        if (SchemeOf(site) != "https" || !IsSafeTabUrl(site) || site.size() > 2048) site.clear();
+        result["site"] = site;
+    }
+    if (j.value("startup", false))
+    {
+        // Once per start: when a newer version exists, show its page.
+        if (!updateSiteShown_ && uiReady_ && !shuttingDown_ && result.is_object() && result.value("available", false) && !site.empty())
+        {
+            updateSiteShown_ = true;
+            NewTab(site, false, true, -1, false);
+        }
+        return;
     }
     const std::string id = j.value("id", "null");
     Reply(j.value("tab", 0), id, j.value("ok", false), result);
+}
+
+void BrowserController::OnPermissionRequested(int tabId, const std::string& origin, int kind, bool,
+                                              wil::com_ptr<ICoreWebView2PermissionRequestedEventArgs> args,
+                                              wil::com_ptr<ICoreWebView2Deferral> deferral)
+{
+    auto finish = [args, deferral](COREWEBVIEW2_PERMISSION_STATE state) { args->put_State(state); deferral->Complete(); };
+    static const char* names[] = {"unknown", "microphone", "camera", "geolocation", "notifications", "sensors", "clipboard",
+                                  "downloads", "filesystem", "autoplay", "fonts", "midi", "windows"};
+    const std::string name = (kind >= 0 && kind < 13) ? names[kind] : "other";
+    const std::string scheme = SchemeOf(origin);
+    const auto hostStart = origin.find("://");
+    if ((scheme != "http" && scheme != "https") || hostStart == std::string::npos || IsInternalUrl(origin))
+    {
+        finish(COREWEBVIEW2_PERMISSION_STATE_DENY);
+        return;
+    }
+    if (kind == 9 || kind == 10)  // autoplay and local fonts: engine default
+    {
+        finish(COREWEBVIEW2_PERMISSION_STATE_DEFAULT);
+        return;
+    }
+    const auto end = origin.find_first_of("/?#", hostStart + 3);
+    const std::string site = origin.substr(0, end);
+
+    json all = settings_->Get<json>("sitePermissions");
+    if (all.is_object() && all.contains(site) && all[site].is_object() && all[site].contains(name) && all[site][name].is_string())
+    {
+        finish(all[site][name].get<std::string>() == "allow" ? COREWEBVIEW2_PERMISSION_STATE_ALLOW : COREWEBVIEW2_PERMISSION_STATE_DENY);
+        return;
+    }
+    const Tab* t = tabs_.Find(tabId);
+    const bool priv = t && t->isPrivate;
+    const bool cs = StartsWith(ToLower(LanguageTag()), "cs");
+    Defer([this, finish, site, name, priv, cs, all]() mutable
+    {
+        if (shuttingDown_) { finish(COREWEBVIEW2_PERMISSION_STATE_DENY); return; }
+        const std::wstring text = win::Widen(site) + (cs ? L"\nchce použít: " : L"\nwants to use: ") + win::Widen(name) +
+                                  (cs ? L"\n\nAno = povolit a pamatovat\nNe = zakázat a pamatovat\nZrušit = zakázat jen teď"
+                                      : L"\n\nYes = allow and remember\nNo = block and remember\nCancel = block this time");
+        const int r = MessageBoxW(window_.Handle(), text.c_str(), L"HB Browser", MB_YESNOCANCEL | MB_ICONQUESTION | MB_SETFOREGROUND);
+        if (!priv && r != IDCANCEL && !shuttingDown_)
+        {
+            if (!all.is_object()) all = json::object();
+            all[site][name] = r == IDYES ? "allow" : "deny";
+            settings_->Set("sitePermissions", all);
+        }
+        finish(r == IDYES ? COREWEBVIEW2_PERMISSION_STATE_ALLOW : COREWEBVIEW2_PERMISSION_STATE_DENY);
+    });
 }
 
 // ----------------------------------------------------------------- downloads
@@ -1153,6 +1293,17 @@ void BrowserController::OnDownloadStarting(int, ICoreWebView2DownloadOperation* 
     op->get_TotalBytesToReceive(&total);
 
     std::filesystem::path path = defaultPath ? std::filesystem::path(defaultPath.get()) : std::filesystem::path(L"download");
+    {
+        const std::string name = SanitizeFileName(win::Narrow(path.filename().wstring()));
+        if (settings_->Get<bool>("blockInsecureDownloads") && SchemeOf(uri ? win::Narrow(uri.get()) : std::string()) == "http" &&
+            IsDangerousFileName(name))
+        {
+            args->put_Cancel(TRUE);
+            Toast("downloadBlocked");
+            return;
+        }
+        path = path.parent_path() / win::Widen(name);
+    }
     if (!settings_->Get<bool>("askDownloadLocation"))
     {
         path = win::UniquePath(DownloadDir(), path.filename().wstring());
@@ -1231,7 +1382,7 @@ void BrowserController::OnTabReady(int tabId)
         Toast("privateUnsupported");
     }
     ApplyZoom(tabId);
-    if (tabId == tabs_.ActiveId())
+    if (tabId == tabs_.ActiveId() && uiReady_)
     {
         if (IsInternalUrl(t->url) && ToDisplay(t->url) == "hb://newtab")
         {

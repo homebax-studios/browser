@@ -1,8 +1,12 @@
 #include "WebViewManager.h"
 
+#include <fstream>
+#include <vector>
+
 #include <algorithm>
 
 #include "../core/Log.h"
+#include "../core/Navigation.h"
 #include "../core/Util.h"
 #include "../../../platform/windows/WinUtil.h"
 
@@ -47,13 +51,19 @@ WebViewManager::~WebViewManager()
 
 // ----------------------------------------------------------------- environment
 
-void WebViewManager::Initialize(const std::wstring& language)
+void WebViewManager::Initialize(const std::wstring& language, bool lite)
 {
     if (initialized_) return;
     initialized_ = true;
 
     auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
     if (!language.empty()) options->put_Language(language.c_str());
+    {
+        // HTTPS-first upgrades typed http addresses (with fallback); occlusion tracking costs CPU for nothing in a single window.
+        std::wstring args = L"--enable-features=HttpsUpgrades --disable-features=CalculateNativeWinOcclusion";
+        if (lite) args += L" --renderer-process-limit=4 --disable-smooth-scrolling --disable-low-res-tiling";
+        options->put_AdditionalBrowserArguments(args.c_str());
+    }
 
     const std::wstring fixedRuntime = FindFixedRuntime();
     if (!fixedRuntime.empty()) HB_INFO("Using bundled WebView2 runtime: {}", win::Narrow(fixedRuntime));
@@ -69,6 +79,8 @@ void WebViewManager::Initialize(const std::wstring& language)
                     return S_OK;
                 }
                 env_ = env;
+                wil::unique_cotaskmem_string ver;
+                if (SUCCEEDED(env_->get_BrowserVersionString(ver.put()))) runtimeVersion_ = Str(ver);
                 sink_.OnEnvironmentReady();
                 return S_OK;
             }).Get());
@@ -313,7 +325,35 @@ void WebViewManager::SetupCommon(int id, View& v, bool isUi)
             {
                 wil::unique_cotaskmem_string uri;
                 a->get_Uri(uri.put());
-                sink_.OnNavigationStarting(id, Str(uri));
+                BOOL user = FALSE;
+                a->get_IsUserInitiated(&user);
+                const std::string target = Str(uri);
+                if (!IsAllowedNavigation(target, user != FALSE))
+                {
+                    a->put_Cancel(TRUE);
+                    return S_OK;
+                }
+                sink_.OnNavigationStarting(id, target);
+                return S_OK;
+            }).Get(), &token);
+
+    wv->add_PermissionRequested(
+        Callback<ICoreWebView2PermissionRequestedEventHandler>(
+            [this, id](ICoreWebView2*, ICoreWebView2PermissionRequestedEventArgs* a) -> HRESULT
+            {
+                wil::unique_cotaskmem_string uri;
+                a->get_Uri(uri.put());
+                COREWEBVIEW2_PERMISSION_KIND kind = COREWEBVIEW2_PERMISSION_KIND_UNKNOWN_PERMISSION;
+                a->get_PermissionKind(&kind);
+                BOOL user = FALSE;
+                a->get_IsUserInitiated(&user);
+                wil::com_ptr<ICoreWebView2Deferral> deferral;
+                if (FAILED(a->GetDeferral(deferral.put())))
+                {
+                    a->put_State(COREWEBVIEW2_PERMISSION_STATE_DENY);
+                    return S_OK;
+                }
+                sink_.OnPermissionRequested(id, Str(uri), static_cast<int>(kind), user != FALSE, a, deferral);
                 return S_OK;
             }).Get(), &token);
 
@@ -534,6 +574,55 @@ void WebViewManager::ExecuteScript(int id, const std::wstring& js, std::function
                 if (done) done(SUCCEEDED(hr) && result ? win::Narrow(result) : std::string());
                 return S_OK;
             }).Get());
+}
+
+void WebViewManager::SavePdf(int id, const std::wstring& path, std::function<void(bool)> done)
+{
+    auto it = views_.find(id);
+    auto w7 = it != views_.end() ? it->second.webView.try_query<ICoreWebView2_7>() : nullptr;
+    if (!w7) { if (done) done(false); return; }
+    const HRESULT hr = w7->PrintToPdf(path.c_str(), nullptr,
+        Callback<ICoreWebView2PrintToPdfCompletedHandler>([done](HRESULT err, BOOL ok) -> HRESULT
+        {
+            if (done) done(SUCCEEDED(err) && ok);
+            return S_OK;
+        }).Get());
+    if (FAILED(hr) && done) done(false);
+}
+
+void WebViewManager::Screenshot(int id, const std::wstring& path, std::function<void(bool)> done)
+{
+    auto it = views_.find(id);
+    if (it == views_.end()) { if (done) done(false); return; }
+    IStream* raw = nullptr;
+    if (FAILED(CreateStreamOnHGlobal(nullptr, TRUE, &raw)) || !raw) { if (done) done(false); return; }
+    wil::com_ptr<IStream> stream;
+    stream.attach(raw);
+    const HRESULT hr = it->second.webView->CapturePreview(COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG, stream.get(),
+        Callback<ICoreWebView2CapturePreviewCompletedHandler>([stream, path, done](HRESULT err) -> HRESULT
+        {
+            bool ok = false;
+            if (SUCCEEDED(err))
+            {
+                STATSTG st{};
+                LARGE_INTEGER zero{};
+                if (SUCCEEDED(stream->Stat(&st, STATFLAG_NONAME)) && st.cbSize.QuadPart > 0 && st.cbSize.QuadPart < (256ll << 20) &&
+                    SUCCEEDED(stream->Seek(zero, STREAM_SEEK_SET, nullptr)))
+                {
+                    std::vector<char> buf(static_cast<size_t>(st.cbSize.QuadPart));
+                    ULONG got = 0;
+                    if (SUCCEEDED(stream->Read(buf.data(), static_cast<ULONG>(buf.size()), &got)) && got > 0)
+                    {
+                        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+                        out.write(buf.data(), got);
+                        ok = out.good();
+                    }
+                }
+            }
+            if (done) done(ok);
+            return S_OK;
+        }).Get());
+    if (FAILED(hr) && done) done(false);
 }
 
 void WebViewManager::OpenDevTools(int id)

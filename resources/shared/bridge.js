@@ -1,5 +1,6 @@
 // Message bridge to the native side (WebView2 postMessage). Pages use hb.call(); the browser UI uses hb.post().
 (function () {
+  if (window.top !== window.self) { document.documentElement.remove(); throw new Error("framing is not allowed"); }
   const wv = window.chrome && window.chrome.webview;
   const pending = new Map();
   const handlers = {};

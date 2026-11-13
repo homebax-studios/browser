@@ -36,6 +36,8 @@ int main() {
   SetCustomSearchEngines({{"custom-a", "A", "https://a.cz/?q=%s"}, {"google", "Evil", "https://evil/%s"}, {"custom-b", "B", "https://b.cz/"}});
   CHECK(SearchEngines().size() == 9); EQ(ResolveInput("pes", "custom-a"), "https://a.cz/?q=pes"); EQ(ResolveInput("pes", "gone"), "https://www.google.com/search?q=pes");
   SetCustomSearchEngines({});
+  CHECK(IsAllowedNavigation("https://a.cz", false)); CHECK(!IsAllowedNavigation("ms-msdt:/id", true)); CHECK(!IsAllowedNavigation("vbscript:x", true)); CHECK(!IsAllowedNavigation("data:text/html,x", false)); CHECK(IsAllowedNavigation("data:text/html,x", true)); CHECK(IsAllowedNavigation("mailto:a@b.cz", false));
+  CHECK(Settings::IsValid("liteMode", "on")); CHECK(!Settings::IsValid("liteMode", "x")); CHECK(Settings::IsValid("sitePermissions", json::parse(R"({"https://a.cz":{"geolocation":"deny"}})"))); CHECK(!Settings::IsValid("sitePermissions", json::parse(R"({"https://a.cz":{"geolocation":"maybe"}})")));
   CHECK(IsDangerousFileName("Setup.EXE")); CHECK(IsDangerousFileName("a.exe. ")); CHECK(IsDangerousFileName("x.ps1")); CHECK(!IsDangerousFileName("photo.png")); CHECK(!IsDangerousFileName("noext"));
   EQ(SanitizeFileName("..\\a/b:c.txt"), ".._a_b_c.txt"); EQ(SanitizeFileName("CON.txt"), "_CON.txt"); EQ(SanitizeFileName("  "), "download");
   CHECK(!Settings::IsValid("theme", "neon")); CHECK(!Settings::IsValid("accent", "red;}x{")); CHECK(Settings::IsValid("accent", "#4F7cff")); CHECK(!Settings::IsValid("sleepAfterMinutes", 0)); CHECK(!Settings::IsValid("defaultZoom", 9000));

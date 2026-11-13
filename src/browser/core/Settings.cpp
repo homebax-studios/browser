@@ -31,6 +31,10 @@ json Settings::Defaults()
         {"devTools", true},
         {"customSearchEngines", json::array()},  // [{id:"custom-x", name, url with one %s}]
         {"clearOnExit", false},
+        {"checkUpdates", true},               // look for a new version at every start and open its page
+        {"liteMode", "auto"},                 // auto | on | off  (fewer processes, less memory; applied at next start)
+        {"blockInsecureDownloads", true},     // refuse programs/scripts downloaded over plain http
+        {"sitePermissions", json::object()},  // {origin: {permission: "allow"|"deny"}}
         {"pinned", json::array({
             {{"title", "Google"}, {"url", "https://www.google.com"}},
             {{"title", "YouTube"}, {"url", "https://www.youtube.com"}},
@@ -122,6 +126,18 @@ bool Settings::IsValid(const std::string& key, const json& v)
         if (!v.is_object() || v.size() > 2000) return false;
         for (auto it = v.begin(); it != v.end(); ++it)
             if (!it.value().is_number() || it.key().size() > 255) return false;
+        return true;
+    }
+    if (key == "liteMode") return OneOf(v, {"auto", "on", "off"});
+    if (key == "sitePermissions")
+    {
+        if (!v.is_object() || v.size() > 500) return false;
+        for (auto o = v.begin(); o != v.end(); ++o)
+        {
+            if (o.key().size() > 300 || !o.value().is_object() || o.value().size() > 16) return false;
+            for (auto k = o.value().begin(); k != o.value().end(); ++k)
+                if (k.key().size() > 40 || !OneOf(k.value(), {"allow", "deny"})) return false;
+        }
         return true;
     }
     if (key == "customSearchEngines")

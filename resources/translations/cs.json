@@ -191,5 +191,22 @@
  "f_openTabs": "Otevřené karty",
  "k_address": "Adresní řádek",
  "k_switch": "Přepnout kartu",
- "k_zoom": "Přiblížení"
+ "k_zoom": "Přiblížení",
+ "m_savePdf": "Uložit stránku jako PDF",
+ "m_screenshot": "Snímek stránky",
+ "m_reader": "Režim čtení",
+ "m_night": "Tmavá stránka (přepnout)",
+ "toast_pdfSaved": "PDF uloženo do Stažených",
+ "toast_shotSaved": "Snímek uložen do Stažených",
+ "toast_actionFailed": "Na této stránce to nejde",
+ "toast_downloadBlocked": "Zablokován program stažený přes nezabezpečené připojení",
+ "s_checkUpdates": "Při startu hledat aktualizace",
+ "h_checkUpdates": "Při nové verzi otevře stránku s aktualizací",
+ "s_blockInsecureDownloads": "Blokovat programy stažené přes http",
+ "s_sitePerms": "Oprávnění webů",
+ "h_sitePerms": "Zapomene všechna povolená/zakázaná oprávnění (kamera, poloha …)",
+ "s_liteMode": "Režim pro slabé počítače",
+ "h_liteMode": "Méně procesů a lehčí vykreslování (projeví se po restartu)",
+ "opt_on": "Zapnuto",
+ "opt_off": "Vypnuto"
 }

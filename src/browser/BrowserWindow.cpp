@@ -1,6 +1,7 @@
 #include "BrowserWindow.h"
 
 #include <dwmapi.h>
+#include <tlhelp32.h>
 #include <algorithm>
 #include <windowsx.h>
 
@@ -10,6 +11,38 @@
 namespace hb {
 
 namespace {
+
+constexpr UINT_PTR kTimerDock = 9;
+
+DWORD ParentPidOf(DWORD pid)
+{
+    DWORD parent = 0;
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return 0;
+    PROCESSENTRY32W e{sizeof(e)};
+    for (BOOL ok = Process32FirstW(snap, &e); ok; ok = Process32NextW(snap, &e))
+        if (e.th32ProcessID == pid) { parent = e.th32ParentProcessID; break; }
+    CloseHandle(snap);
+    return parent;
+}
+
+// A visible "DevTools ..." window whose owning process is a child of this browser (never another browser's tools).
+BOOL CALLBACK FindDevTools(HWND h, LPARAM lp)
+{
+    if (!IsWindowVisible(h)) return TRUE;
+    wchar_t cls[64]{};
+    GetClassNameW(h, cls, 63);
+    if (wcscmp(cls, L"Chrome_WidgetWin_1") != 0) return TRUE;
+    wchar_t title[16]{};
+    GetWindowTextW(h, title, 15);
+    if (_wcsnicmp(title, L"DevTools", 8) != 0) return TRUE;
+    DWORD pid = 0;
+    GetWindowThreadProcessId(h, &pid);
+    if (pid == 0 || ParentPidOf(pid) != GetCurrentProcessId()) return TRUE;
+    *reinterpret_cast<HWND*>(lp) = h;
+    return FALSE;
+}
+
 constexpr wchar_t kMainClass[] = L"HB_BROWSER_MAIN_WINDOW";
 constexpr wchar_t kHostClass[] = L"HB_BROWSER_HOST";
 constexpr int kBorder = 5;  // resize border in DIP; the host windows are inset by the same amount
@@ -84,7 +117,9 @@ void BrowserWindow::Layout()
     const int h = std::max(0, static_cast<int>(rc.bottom) - 2 * inset);
     const int shellH = fullscreen_ ? 0 : std::min(h, Scaled(shellCss_));
 
-    MoveWindow(contentHost_, x, y + shellH, w, std::max(0, h - shellH), TRUE);
+    const int dockW = (dock_ && !fullscreen_) ? std::clamp(w * 2 / 5, std::min(w / 2, 360), w / 2) : 0;
+    contentRect_ = RECT{x, y + shellH, x + w, y + h};
+    MoveWindow(contentHost_, x, y + shellH, std::max(0, w - dockW), std::max(0, h - shellH), TRUE);
     MoveWindow(uiHost_, x, y, w, h, TRUE);
     ShowWindow(uiHost_, fullscreen_ ? SW_HIDE : SW_SHOW);
 
@@ -104,8 +139,57 @@ void BrowserWindow::Layout()
     SetWindowPos(uiHost_, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
     if (controller_)
-        controller_->OnLayout(RECT{0, 0, w, h}, RECT{0, 0, w, std::max(0, h - shellH)});
+        controller_->OnLayout(RECT{0, 0, w, h}, RECT{0, 0, std::max(0, w - dockW), std::max(0, h - shellH)});
     InvalidateRect(hwnd_, nullptr, FALSE);
+    PositionDock();
+}
+
+void BrowserWindow::BeginDock()
+{
+    if (dock_) return;
+    dockSearchTicks_ = 28;  // ~7 s to find the freshly opened tools window
+    SetTimer(hwnd_, kTimerDock, 250, nullptr);
+}
+
+void BrowserWindow::CloseDock()
+{
+    if (dock_ && IsWindow(dock_)) PostMessageW(dock_, WM_CLOSE, 0, 0);
+}
+
+void BrowserWindow::PositionDock()
+{
+    if (!dock_ || fullscreen_) return;
+    const int w = contentRect_.right - contentRect_.left, h = contentRect_.bottom - contentRect_.top;
+    const int dockW = std::clamp(w * 2 / 5, std::min(w / 2, 360), w / 2);
+    POINT p{contentRect_.right - dockW, contentRect_.top};
+    ClientToScreen(hwnd_, &p);
+    if (IsIconic(hwnd_)) return;
+    SetWindowPos(dock_, nullptr, p.x, p.y, dockW, h, SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+}
+
+void BrowserWindow::TickDock()
+{
+    if (dock_)
+    {
+        if (!IsWindow(dock_) || !IsWindowVisible(dock_))
+        {
+            dock_ = nullptr;
+            KillTimer(hwnd_, kTimerDock);
+            Layout();  // give the space back
+        }
+        return;
+    }
+    HWND found = nullptr;
+    EnumWindows(FindDevTools, reinterpret_cast<LPARAM>(&found));
+    if (found)
+    {
+        dock_ = found;
+        SetWindowLongPtrW(dock_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(hwnd_));  // owned: stays on top, minimizes with us
+        ShowWindow(dock_, SW_RESTORE);
+        Layout();
+    }
+    else if (--dockSearchTicks_ <= 0)
+        KillTimer(hwnd_, kTimerDock);
 }
 
 void BrowserWindow::SetShellHeight(int cssPx)
@@ -300,7 +384,12 @@ LRESULT BrowserWindow::OnMessage(UINT msg, WPARAM wp, LPARAM lp)
             controller_->OnSystemThemeChanged();
         break;
 
+    case WM_MOVE:
+        PositionDock();
+        break;
+
     case WM_TIMER:
+        if (wp == kTimerDock) { TickDock(); return 0; }
         if (controller_) controller_->OnTimer(wp);
         return 0;
 
@@ -312,7 +401,7 @@ LRESULT BrowserWindow::OnMessage(UINT msg, WPARAM wp, LPARAM lp)
     case WM_COPYDATA:
     {
         const auto* cds = reinterpret_cast<const COPYDATASTRUCT*>(lp);
-        if (cds && cds->dwData == kCopyDataId && controller_)
+        if (cds && cds->dwData == kCopyDataId && controller_ && cds->lpData && cds->cbData <= 65536)
         {
             const std::string text(static_cast<const char*>(cds->lpData), cds->cbData);
             std::vector<std::string> urls;
@@ -321,7 +410,7 @@ LRESULT BrowserWindow::OnMessage(UINT msg, WPARAM wp, LPARAM lp)
             {
                 size_t end = text.find('\n', start);
                 if (end == std::string::npos) end = text.size();
-                if (end > start) urls.push_back(text.substr(start, end - start));
+                if (end > start && end - start <= 4096 && urls.size() < 32) urls.push_back(text.substr(start, end - start));
                 start = end + 1;
             }
             controller_->OpenExternal(urls);
@@ -337,6 +426,7 @@ LRESULT BrowserWindow::OnMessage(UINT msg, WPARAM wp, LPARAM lp)
         return 0;
 
     case WM_DESTROY:
+        KillTimer(hwnd_, kTimerDock);
         KillTimer(hwnd_, kTimerHousekeeping);
         if (controller_)
         {

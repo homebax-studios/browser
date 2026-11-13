@@ -61,6 +61,15 @@ bool IsValidSearchTemplate(const std::string& url)
     return !HostOf(url).empty();
 }
 
+bool IsAllowedNavigation(const std::string& url, bool userInitiated)
+{
+    const std::string scheme = SchemeOf(url);
+    if (scheme == "http" || scheme == "https" || scheme == "file" || scheme == "about" || scheme == "view-source" ||
+        scheme == "blob" || scheme == "mailto" || scheme == "tel")
+        return true;
+    return scheme == "data" && userInitiated;
+}
+
 bool IsSafeTabUrl(const std::string& url)
 {
     const std::string scheme = SchemeOf(url);

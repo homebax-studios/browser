@@ -33,6 +33,12 @@ public:
 
     // Called by the controller. All sizes from the UI are CSS pixels.
     void SetShellHeight(int cssPx);
+    void Relayout() { Layout(); }
+    // Developer tools: the engine opens them in their own window; this snaps that window to the right edge of the
+    // content area (content shrinks to make room) and releases the space when it is closed.
+    void BeginDock();
+    void CloseDock();
+    bool HasDock() const noexcept { return dock_ != nullptr; }
     void SetOverlays(std::vector<RECT> cssRects);  // popup areas (menu, suggestions...) that must be drawn above the page
     void SetFullscreen(bool on);
     void SetTheme(bool dark, COLORREF frameColor);
@@ -65,6 +71,11 @@ private:
     int shellCss_ = 88;
     std::vector<RECT> overlays_;
     bool fullscreen_ = false;
+    HWND dock_ = nullptr;
+    int dockSearchTicks_ = 0;
+    RECT contentRect_{};  // client coordinates of the whole content area (without dock)
+    void PositionDock();
+    void TickDock();
     bool startMaximized_ = false;
     WINDOWPLACEMENT beforeFullscreen_{};
     std::unique_ptr<BrowserController> controller_;
